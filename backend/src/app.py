@@ -13,7 +13,7 @@ app = Flask(__name__)
 app.secret_key = "SECRET_KEY"
 
 # DB Config
-app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+pymysql://admin:admin@localhost:3306/fair-finder-db"
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:admin@localhost:3306/fair-finder-db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
