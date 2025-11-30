@@ -21,8 +21,6 @@ CORS(app)
 
 @app.route("/")
 def home():
-
-
     return "Okay"
 
 @app.route("/test_post", methods=["POST"])
@@ -34,6 +32,104 @@ def test_post():
 @app.route("/test_get", methods=["GET"])
 def test_get():
     return jsonify(get_test()), 200
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        data = request.get_json()
+
+        status, message = validate_post_request(data, PostFields.register.value)
+        if not status:
+            return jsonify(message), 400
+
+        create_user(data)
+
+        return redirect(url_for("home"))
+    else:
+        # TODO: Return register page
+        return "Register here wow"
+    
+@app.route("/get_users", methods=["GET"])
+def get_users():
+    return jsonify(get_all_users()), 200
+
+@app.route("/post_event", methods=["GET", "POST"])
+def post_event():
+    if request.method == "POST":
+        data = request.get_json()
+
+        status, message = validate_post_request(data, PostFields.event.value)
+        if not status:
+            return jsonify(message), 400
+        
+        create_event(data)
+        return redirect(url_for("home"))
+    else:
+        # TODO: Return TBD.
+        return "TODO"
+
+@app.route("/get_events", methods=["GET"])
+def get_events():
+    return jsonify(get_all_events()), 200
+
+@app.route("/post_participation", methods=["GET", "POST"])
+def post_participation():
+    if request.method == "POST":
+        data = request.get_json()
+
+        status, message = validate_post_request(data, PostFields.participation.value)
+        if not status:
+            return jsonify(message), 400
+
+        create_participation(data)
+        return redirect(url_for("home"))
+    else:
+        # TODO: Return TBD.
+        return "TODO"
+
+@app.route("/get_participations", methods=["GET"])
+def get_participations():
+    return jsonify(get_all_participations()), 200
+
+@app.route("/delete", methods=["GET"])
+def delete():
+    return delete_all_participations()
+
+@app.route("/get_user", methods=["GET"])
+def get_user_endpoint():
+    user_id = request.args.get("user_id", type = int)
+    if user_id is None:
+        return jsonify({"error": "Missing user_id parameter"}), 400
+    
+    return jsonify(get_user(user_id)), 200
+
+@app.route("/get_event", methods=["GET"])
+def get_event_endpoint():
+    event_id = request.args.get("event_id", type = int)
+    if event_id is None:
+        return jsonify({"error": "Missing event_id parameter"}), 400
+    
+    return jsonify(get_event(event_id)), 200
+
+@app.route("/get_participation", methods=["GET"])
+def get_participation_endpoint():
+    user_id = request.args.get("user_id", type = int)
+    if user_id is None:
+        return jsonify({"error": "Missing user_id parameter"}), 400
+    event_id = request.args.get("event_id", type = int)
+    if event_id is None:
+        return jsonify({"error": "Missing event_id parameter"}), 400
+    
+    return jsonify(get_participation(user_id, event_id)), 200
+
+
+@app.route("/get_user_part/<int:user_id>", methods=["GET"])
+def get_user_part(user_id):
+    return jsonify(get_user_participations(user_id)), 200
+
+@app.route("/get_event_part/<int:event_id>", methods=["GET"])
+def get_event_part(event_id):
+    return jsonify(get_event_participations(event_id)), 200
 
 if __name__ == '__main__':
     with app.app_context():
