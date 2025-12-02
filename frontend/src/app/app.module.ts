@@ -5,6 +5,7 @@ import { AppComponent } from "./app.component";
 import { MapComponent } from "./pages/map/map.component";
 import { HomeComponent } from "./pages/home/home.component";
 import { LoginComponent } from './pages/login/login.component';
+import { RegisterComponent } from './pages/register/register.component';
 
 import { AppRoutingModule } from "./app-routing.module";
 
@@ -20,7 +21,8 @@ import { MatInputModule } from '@angular/material/input';
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { RegisterComponent } from './pages/register/register.component';
+
+import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
   declarations: [
@@ -36,6 +38,7 @@ import { RegisterComponent } from './pages/register/register.component';
     BrowserAnimationsModule,
     FlexLayoutModule,
     ReactiveFormsModule,      // pentru formGroup
+    HttpClientModule,
     // Angular Material Modules
     MatTabsModule,
     MatButtonModule,

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-register',
@@ -10,7 +11,7 @@ export class RegisterComponent implements OnInit {
 
   registerForm!: FormGroup;
 
-  constructor(private fb: FormBuilder) { }
+  constructor(private fb: FormBuilder, private http: HttpClient) { }
 
   ngOnInit(): void {
     this.registerForm = this.fb.group({
@@ -30,7 +31,28 @@ export class RegisterComponent implements OnInit {
 
   onRegister(): void {
     if (this.registerForm.valid) {
-      console.log(this.registerForm.value);
+
+      // Format the date as YYYY-MM-DD
+      const birthdayValue = this.registerForm.value.birthday;
+      const formattedBirthday = new Date(birthdayValue).toISOString().split('T')[0];
+
+      const payload = {
+        first_name: this.registerForm.value.firstName,
+        last_name: this.registerForm.value.lastName,
+        birthday: formattedBirthday,
+        email: this.registerForm.value.email,
+        password: this.registerForm.value.password
+      };
+
+      this.http.post('http://localhost:8081/register', payload)
+        .subscribe({
+          next: (res) => {
+            console.log('Registration successful:', res);
+          },
+          error: (err) => {
+            console.error('Registration failed:', err);
+          }
+        });
     }
   }
 }

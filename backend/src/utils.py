@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-
+import re
 from enum import Enum
 from models import db
 from models import TestTable
@@ -282,5 +282,56 @@ def validate_post_request(data: dict, fields: dict):
         
         if field_type and not isinstance(data[field], field_type):
             return False, {"status": f"Invalid field for {field}. Expected {field_type}"}
+
+    return True, {}
+def validate_register_data(data: dict):
+    """
+    Specific validation for user registration.
+    Checks for: missing fields, empty strings, max lengths, email format, date format.
+    """
+    if data is None:
+        return False, {"status": "Missing JSON data."}
+
+    # 1. First Name Validation
+    if "first_name" not in data or not isinstance(data["first_name"], str):
+        return False, {"status": "Missing or invalid 'first_name'."}
+    if not data["first_name"].strip():
+        return False, {"status": "First name cannot be empty."}
+    if len(data["first_name"]) > 40:
+        return False, {"status": "First name too long (max 40 characters)."}
+
+    # 2. Last Name Validation
+    if "last_name" not in data or not isinstance(data["last_name"], str):
+        return False, {"status": "Missing or invalid 'last_name'."}
+    if not data["last_name"].strip():
+        return False, {"status": "Last name cannot be empty."}
+    if len(data["last_name"]) > 60:
+        return False, {"status": "Last name too long (max 60 characters)."}
+
+    # 3. Email Validation
+    if "email" not in data or not isinstance(data["email"], str):
+        return False, {"status": "Missing or invalid 'email'."}
+    if len(data["email"]) > 50:
+        return False, {"status": "Email too long (max 50 characters)."}
+    # Simple regex to check for 'something@something.com'
+    email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+    if not re.match(email_regex, data["email"]):
+        return False, {"status": "Invalid email format."}
+
+    # 4. Password Validation
+    if "password" not in data or not isinstance(data["password"], str):
+        return False, {"status": "Missing or invalid 'password'."}
+    if len(data["password"]) < 8:
+        return False, {"status": "Password must be at least 8 characters long."}
+    if not data["password"].strip():
+        return False, {"status": "Password cannot be empty spaces."}
+
+    # 5. Birthday Validation
+    if "birthday" not in data or not isinstance(data["birthday"], str):
+        return False, {"status": "Missing or invalid 'birthday'."}
+    try:
+        datetime.strptime(data["birthday"], "%Y-%m-%d")
+    except ValueError:
+        return False, {"status": "Invalid birthday format. Use YYYY-MM-DD."}
 
     return True, {}
