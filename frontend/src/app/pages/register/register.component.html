@@ -1,0 +1,64 @@
+<div class="login-container">
+    <mat-card class="login-card mat-elevation-z6">
+        <h1 class="title">FairFinder</h1>
+        <h2 class="subtitle">Create your account</h2>
+
+        <form [formGroup]="registerForm" (ngSubmit)="onRegister()">
+
+            <!-- First Name -->
+            <mat-form-field appearance="fill" class="full-width">
+                <mat-label>First Name</mat-label>
+                <input matInput type="text" formControlName="firstName" placeholder="Enter your first name">
+                <mat-error *ngIf="firstName.invalid && firstName.touched">
+                    First name is required.
+                </mat-error>
+            </mat-form-field>
+
+            <!-- Last Name -->
+            <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Last Name</mat-label>
+                <input matInput type="text" formControlName="lastName" placeholder="Enter your last name">
+                <mat-error *ngIf="lastName.invalid && lastName.touched">
+                    Last name is required.
+                </mat-error>
+            </mat-form-field>
+
+            <!-- Birthday -->
+            <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Birthday</mat-label>
+                <input matInput type="date" formControlName="birthday">
+                <mat-error *ngIf="birthday.invalid && birthday.touched">
+                    Please select a valid date.
+                </mat-error>
+            </mat-form-field>
+
+            <!-- Email -->
+            <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Email</mat-label>
+                <input matInput type="email" formControlName="email" placeholder="Enter your email">
+                <mat-error *ngIf="email.invalid && email.touched">
+                    Please enter a valid email.
+                </mat-error>
+            </mat-form-field>
+
+            <!-- Password -->
+            <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Password</mat-label>
+                <input matInput type="password" formControlName="password" placeholder="Enter your password">
+                <mat-error *ngIf="password.invalid && password.touched">
+                    Password is required.
+                </mat-error>
+            </mat-form-field>
+
+            <button mat-raised-button color="primary" class="login-btn" [disabled]="registerForm.invalid">
+                Create Account
+            </button>
+
+            <div class="register-link">
+                Already have an account?
+                <a routerLink="/login">Log in</a>
+            </div>
+
+        </form>
+    </mat-card>
+</div>
