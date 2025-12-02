@@ -5,31 +5,31 @@ import {
   ElementRef,
   Output,
   EventEmitter,
-  OnDestroy
+  OnDestroy,
 } from "@angular/core";
 
 import esri = __esri; // Esri TypeScript Types
 
-import Config from '@arcgis/core/config';
-import WebMap from '@arcgis/core/WebMap';
-import MapView from '@arcgis/core/views/MapView';
-import Bookmarks from '@arcgis/core/widgets/Bookmarks';
-import Expand from '@arcgis/core/widgets/Expand';
+import Config from "@arcgis/core/config";
+import WebMap from "@arcgis/core/WebMap";
+import MapView from "@arcgis/core/views/MapView";
+import Bookmarks from "@arcgis/core/widgets/Bookmarks";
+import Expand from "@arcgis/core/widgets/Expand";
 
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
-import Graphic from '@arcgis/core/Graphic';
-import Point from '@arcgis/core/geometry/Point';
+import Graphic from "@arcgis/core/Graphic";
+import Point from "@arcgis/core/geometry/Point";
 
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
+import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 
-import FeatureSet from '@arcgis/core/rest/support/FeatureSet';
-import RouteParameters from '@arcgis/core/rest/support/RouteParameters';
+import FeatureSet from "@arcgis/core/rest/support/FeatureSet";
+import RouteParameters from "@arcgis/core/rest/support/RouteParameters";
 import * as route from "@arcgis/core/rest/route.js";
 
 @Component({
   selector: "app-map",
   templateUrl: "./map.component.html",
-  styleUrls: ["./map.component.scss"]
+  styleUrls: ["./map.component.scss"],
 })
 export class MapComponent implements OnInit, OnDestroy {
   @Output() mapLoadedEvent = new EventEmitter<boolean>();
@@ -49,7 +49,7 @@ export class MapComponent implements OnInit, OnDestroy {
   loaded = false;
   directionsElement: any;
 
-  constructor() { }
+  constructor() {}
 
   ngOnInit() {
     this.initializeMap().then(() => {
@@ -60,10 +60,11 @@ export class MapComponent implements OnInit, OnDestroy {
 
   async initializeMap() {
     try {
-      Config.apiKey = "YOUR_API_KEY";
+      Config.apiKey =
+        "AAPTxy8BH1VEsoebNVZXo8HurKqlhvUKBfNssoTzTUwwyzWBytmWSpxC7jBfTuYIewz1OefDzWcPQlhGwhpCKa58tfYcQgzCqmFnKeItW9gpQTLb3Humpe1L62cfQcQmTiHZynTcISGk_-Tn9JG79k5qhY3IIuhDuh1-62S6ucWv7wroiByU-rZBpxxGK0Tb93LTvBngZ1bOq0Qo4mNQz2UQeqoEIvIYN6RTSitQQCfq_RE.AT1_7gEwBK61";
 
       const mapProperties: esri.WebMapProperties = {
-        basemap: this.basemap
+        basemap: this.basemap,
       };
       this.map = new WebMap(mapProperties);
 
@@ -74,11 +75,11 @@ export class MapComponent implements OnInit, OnDestroy {
         container: this.mapViewEl.nativeElement,
         center: this.center,
         zoom: this.zoom,
-        map: this.map
+        map: this.map,
       };
       this.view = new MapView(mapViewProperties);
 
-      this.view.on('pointer-move', ["Shift"], (event) => {
+      this.view.on("pointer-move", ["Shift"], (event) => {
         const point = this.view.toMap({ x: event.x, y: event.y });
         console.log("Map pointer moved: ", point.longitude, point.latitude);
       });
@@ -96,17 +97,17 @@ export class MapComponent implements OnInit, OnDestroy {
   addFeatureLayers() {
     this.trailheadsLayer = new FeatureLayer({
       url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads/FeatureServer/0",
-      outFields: ['*']
+      outFields: ["*"],
     });
     this.map.add(this.trailheadsLayer);
 
     const trailsLayer = new FeatureLayer({
-      url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails/FeatureServer/0"
+      url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails/FeatureServer/0",
     });
     this.map.add(trailsLayer, 0);
 
     const parksLayer = new FeatureLayer({
-      url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Parks_and_Open_Space/FeatureServer/0"
+      url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Parks_and_Open_Space/FeatureServer/0",
     });
     this.map.add(parksLayer, 0);
 
@@ -123,11 +124,14 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   addRouting() {
-    const routeUrl = "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World";
+    const routeUrl =
+      "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World";
     this.view.on("click", (event) => {
       this.view.hitTest(event).then((elem: esri.HitTestResult) => {
         if (elem && elem.results && elem.results.length > 0) {
-          let point: esri.Point = elem.results.find(e => e.layer === this.trailheadsLayer)?.mapPoint;
+          let point: esri.Point = elem.results.find(
+            (e) => e.layer === this.trailheadsLayer
+          )?.mapPoint;
           if (point) {
             console.log("get selected point: ", elem, point);
             if (this.graphicsLayerUserPoints.graphics.length === 0) {
@@ -147,21 +151,21 @@ export class MapComponent implements OnInit, OnDestroy {
   addPoint(lat: number, lng: number) {
     let point = new Point({
       longitude: lng,
-      latitude: lat
+      latitude: lat,
     });
 
     const simpleMarkerSymbol = {
       type: "simple-marker",
-      color: [226, 119, 40],  // Orange
+      color: [226, 119, 40], // Orange
       outline: {
         color: [255, 255, 255], // White
-        width: 1
-      }
+        width: 1,
+      },
     };
 
     let pointGraphic: esri.Graphic = new Graphic({
       geometry: point,
-      symbol: simpleMarkerSymbol
+      symbol: simpleMarkerSymbol,
     });
 
     this.graphicsLayerUserPoints.add(pointGraphic);
@@ -178,9 +182,9 @@ export class MapComponent implements OnInit, OnDestroy {
   async calculateRoute(routeUrl: string) {
     const routeParams = new RouteParameters({
       stops: new FeatureSet({
-        features: this.graphicsLayerUserPoints.graphics.toArray()
+        features: this.graphicsLayerUserPoints.graphics.toArray(),
       }),
-      returnDirections: true
+      returnDirections: true,
     });
 
     try {
@@ -197,7 +201,7 @@ export class MapComponent implements OnInit, OnDestroy {
       result.route.symbol = {
         type: "simple-line",
         color: [5, 150, 255],
-        width: 3
+        width: 3,
       };
       this.graphicsLayerRoutes.graphics.add(result.route);
     }
@@ -222,7 +226,11 @@ export class MapComponent implements OnInit, OnDestroy {
 
   showDirections(features: any[]) {
     this.directionsElement = document.createElement("ol");
-    this.directionsElement.classList.add("esri-widget", "esri-widget--panel", "esri-directions__scroller");
+    this.directionsElement.classList.add(
+      "esri-widget",
+      "esri-widget--panel",
+      "esri-directions__scroller"
+    );
     this.directionsElement.style.marginTop = "0";
     this.directionsElement.style.padding = "15px 15px 15px 30px";
 

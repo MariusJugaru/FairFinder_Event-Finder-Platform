@@ -1,7 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Enum, UniqueConstraint
 import json
-
+from werkzeug.security import generate_password_hash, check_password_hash
 from geoalchemy2 import Geometry
 from geoalchemy2.shape import to_shape
 from shapely.geometry import mapping
@@ -27,7 +27,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key = True, autoincrement = True)
     first_name = db.Column(db.String(40), nullable = False)
     last_name = db.Column(db.String(60), nullable = False)
-    email = db.Column(db.String(50), nullable = False)
+    email = db.Column(db.String(50), unique=True, nullable = False)
     password_hash = db.Column(db.String(200), nullable = False)
     birthday = db.Column(db.Date, nullable = False)
     created_at = db.Column(db.DateTime, default = lambda: datetime.now(timezone.utc), nullable = False)
@@ -46,6 +46,12 @@ class User(db.Model):
             "created_at": self.created_at.isoformat()
         }
     
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
 class Event(db.Model):
     __tablename__ = "events"
     id = db.Column(db.Integer, primary_key = True, autoincrement = True)
