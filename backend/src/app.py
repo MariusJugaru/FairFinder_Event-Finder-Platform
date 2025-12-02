@@ -33,21 +33,48 @@ def test_post():
 def test_get():
     return jsonify(get_test()), 200
 
-@app.route("/register", methods=["GET", "POST"])
+from datetime import datetime
+
+@app.route("/register", methods=["POST"])
 def register():
-    if request.method == "POST":
-        data = request.get_json()
+    data = request.get_json()
 
-        status, message = validate_post_request(data, PostFields.register.value)
-        if not status:
-            return jsonify(message), 400
+    # 1. Validation (Updated for your new fields)
+    required_fields = ["first_name", "last_name", "email", "password", "birthday"]
+    status, message = validate_post_request(data, required_fields)
+    if not status:
+        return jsonify(message), 400
 
-        create_user(data)
+    # 2. Check for existing user
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify({"error": "Email already exists"}), 409
 
-        return redirect(url_for("home"))
-    else:
-        # TODO: Return register page
-        return "Register here wow"
+    # 3. Parse Birthday (String -> Python Date Object)
+    # Assuming frontend sends format "YYYY-MM-DD"
+    try:
+        birth_date_obj = datetime.strptime(data['birthday'], '%Y-%m-%d').date()
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD"}), 400
+
+    # 4. Create User
+    new_user = User(
+        first_name=data['first_name'],
+        last_name=data['last_name'],
+        email=data['email'],
+        birthday=birth_date_obj
+        # Do not pass password here, we use the setter below
+    )
+    
+    new_user.set_password(data['password'])
+
+    # 5. Commit
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        return jsonify(new_user.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": str(e)}), 500
     
 @app.route("/get_users", methods=["GET"])
 def get_users():
