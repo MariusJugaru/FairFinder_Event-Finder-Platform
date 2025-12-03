@@ -4,7 +4,7 @@ from enum import Enum
 from models import db
 from models import TestTable
 from models import User, Event, Participation
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash,check_password_hash
 
 from geoalchemy2.shape import from_shape
 from shapely.geometry import shape

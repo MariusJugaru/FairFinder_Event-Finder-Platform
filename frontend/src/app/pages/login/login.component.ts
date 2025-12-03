@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { AuthService } from '../../services/auth.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-login',
@@ -8,27 +10,42 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 })
 export class LoginComponent implements OnInit {
 
-  loginForm!: FormGroup; // "!" spune TypeScript că va fi inițializat în constructor
+  loginForm!: FormGroup;
+  errorMessage: string = '';
 
-  constructor(private fb: FormBuilder) { }
+  constructor(
+    private fb: FormBuilder,
+    private authService: AuthService,
+    private router: Router
+  ) { }
 
   ngOnInit(): void {
-    // initializare form
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', Validators.required]
     });
   }
 
-  // Gettere pentru template
   get email() { return this.loginForm.get('email')!; }
   get password() { return this.loginForm.get('password')!; }
 
   onSubmit() {
-    if (this.loginForm.valid) {
-      console.log("Form data:", this.loginForm.value);
-      // TODO: conectare la backend / Firebase
-    }
-  }
+    if (this.loginForm.invalid) return;
 
+    this.authService.login(this.loginForm.value)
+      .subscribe({
+        next: (res) => {
+          console.log("Login successful");
+
+          // salvam tokenurile
+          this.authService.saveTokens(res.access_token, res.refresh_token);
+
+          // redirect catre home / dashboard
+          this.router.navigate(['/home']);
+        },
+        error: (err) => {
+          this.errorMessage = err?.error?.error || "Login failed.";
+        }
+      });
+  }
 }

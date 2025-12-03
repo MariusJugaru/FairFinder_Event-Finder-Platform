@@ -3,8 +3,10 @@ from flask import request, session, jsonify, Response
 from flask import url_for, redirect
 
 from flask_cors import CORS
+from datetime import datetime, timedelta
 
 from models import db
+import jwt
 
 # Utils
 from utils import *
@@ -13,11 +15,29 @@ app = Flask(__name__)
 app.secret_key = "SECRET_KEY"
 
 # DB Config
+ACCESS_TOKEN_EXPIRES_MIN = 15
+REFRESH_TOKEN_EXPIRES_DAYS = 7
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:admin@localhost:3306/fair-finder-db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 CORS(app)
+def create_access_token(user_id):
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRES_MIN),
+        "type": "access"
+    }
+    return jwt.encode(payload, app.secret_key, algorithm="HS256")
+
+
+def create_refresh_token(user_id):
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRES_DAYS),
+        "type": "refresh"
+    }
+    return jwt.encode(payload, app.secret_key, algorithm="HS256")
 
 @app.route("/")
 def home():
@@ -33,7 +53,7 @@ def test_post():
 def test_get():
     return jsonify(get_test()), 200
 
-from datetime import datetime
+
 @app.route("/register", methods=["POST"])
 def register():
     data = request.get_json()
@@ -55,7 +75,29 @@ def register():
     except Exception as e:
         db.session.rollback()
         return jsonify({"error": str(e)}), 500
-    
+@app.route("/login", methods=["POST"])
+def login():
+    data = request.get_json()
+
+    # verificam daca email-ul exista
+    user = User.query.filter_by(email=data.get("email")).first()
+    if not user:
+        return jsonify({"error": "Invalid email or password"}), 401
+
+    # verificam parola
+    if not check_password_hash(user.password_hash, data.get("password")):
+        return jsonify({"error": "Invalid email or password"}), 401
+
+    # generam token-uri
+    access_token = create_access_token(user.id)
+    refresh_token = create_refresh_token(user.id)
+
+    return jsonify({
+        "message": "Login successful",
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+    }), 200
+
 @app.route("/get_users", methods=["GET"])
 def get_users():
     return jsonify(get_all_users()), 200

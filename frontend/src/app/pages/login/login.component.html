@@ -31,6 +31,8 @@
                 Don’t have an account?
                 <a routerLink="/register">Create one</a>
             </div>
+            <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+
         </form>
     </mat-card>
 </div>
