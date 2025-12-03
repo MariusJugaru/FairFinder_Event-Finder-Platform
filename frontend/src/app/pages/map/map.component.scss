@@ -1,43 +1,152 @@
-/* import the required JSAPI css */
-// @import url('https://js.arcgis.com/4.12/esri/css/main.css');
-
-// .esri-view {
-//   height: 500px;
-// }
-
-/* Container to hold both the sidebar and the map */
+/* Container */
 .container {
   display: flex;
-  height: calc(100vh - 64px);
+  height: 100vh;
   width: 100%;
+  position: relative;
 }
 
-/* Map view styling */
+/* Sidebar */
+.sidebar {
+  width: 280px;
+  background: linear-gradient(180deg, #2c3e50, #34495e);
+  color: white;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.4);
+}
+
+.sidebar.open {
+  transform: translateX(0);
+}
+
+/* Sidebar header */
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: #ecf0f1;
+  font-size: 1.8rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #e74c3c;
+}
+
+/* Sidebar list */
+.sidebar-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 30px;
+  flex-grow: 1;
+}
+
+.sidebar-list li {
+  margin: 15px 0;
+}
+
+.sidebar-list a {
+  color: #ecf0f1;
+  text-decoration: none;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.sidebar-list a i {
+  margin-right: 10px;
+}
+
+.sidebar-list a:hover {
+  color: #1abc9c;
+  transform: translateX(5px);
+}
+
+/* Map view */
 .map-view {
-  flex: 1; /* Takes up the remaining space next to the sidebar */
+  flex: 1;
   height: 100%;
 }
 
-/* Floating Action Button (FAB) styling */
+/* Floating Action Button */
 .fab {
   position: fixed;
   bottom: 40px;
-  right: 20px;
-  background-color: #e74c3c;
+  left: 20px;
+  /* changed to left side for modern feel */
+  background-color: #1abc9c;
   color: white;
   border: none;
   border-radius: 50%;
-  width: 50px;
-  height: 50px;
+  width: 55px;
+  height: 55px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 28px;
   cursor: pointer;
-  z-index: 1100;
-  transition: background-color 0.3s;
+  z-index: 1300;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  transition: background 0.3s, transform 0.2s;
 }
 
 .fab:hover {
-  background-color: #c0392b;
+  background-color: #16a085;
+  transform: scale(1.1);
+}
+
+/* Search bar */
+.search-container {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  z-index: 1100;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.search-container input {
+  padding: 10px 12px;
+  width: 250px;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+}
+
+.search-container button {
+  padding: 0 20px;
+  border: none;
+  background-color: #1abc9c;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.search-container button:hover {
+  background-color: #16a085;
 }

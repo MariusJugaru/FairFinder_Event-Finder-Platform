@@ -6,7 +6,7 @@ import { MapComponent } from "./pages/map/map.component";
 import { HomeComponent } from "./pages/home/home.component";
 import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
-
+import { FormsModule } from '@angular/forms';
 import { AppRoutingModule } from "./app-routing.module";
 
 // Angular Material
@@ -37,6 +37,7 @@ import { HttpClientModule } from '@angular/common/http';
     AppRoutingModule,
     BrowserAnimationsModule,
     FlexLayoutModule,
+    FormsModule,
     ReactiveFormsModule,      // pentru formGroup
     HttpClientModule,
     // Angular Material Modules

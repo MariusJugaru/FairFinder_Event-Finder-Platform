@@ -1,8 +1,26 @@
-<!-- Main container to hold the map and sidebar -->
 <div class="container">
+    <!-- Sidebar/menu (hidden by default) -->
+    <nav class="sidebar" [class.open]="menuOpen">
+        <div class="sidebar-header">
+            <h3>Menu</h3>
+            <button class="close-btn" (click)="menuOpen = false">&times;</button>
+        </div>
+        <ul class="sidebar-list">
+            <li><a href="#"><i class="fas fa-user"></i> Profile</a></li>
+            <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+            <li><a href="#"><i class="fas fa-question-circle"></i> Help</a></li>
+        </ul>
+    </nav>
+
     <!-- The DIV that will contain the map -->
     <div #mapViewNode class="map-view"></div>
+
+    <!-- Search Bar -->
+    <div class="search-container">
+        <input type="text" placeholder="Search for an event..." [(ngModel)]="searchQuery" />
+        <button (click)="searchLocation()">Search</button>
+    </div>
 </div>
 
-<!-- Floating Action Button (FAB) -->
-<button class="fab" (click)="clearRouter()">x</button>
+<!-- Floating Action Button (FAB) pentru meniu -->
+<button class="fab" (click)="toggleMenu()">☰</button>
