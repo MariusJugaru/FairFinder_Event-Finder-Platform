@@ -17,11 +17,11 @@ import { MatListModule } from '@angular/material/list';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-
+import { MatSidenavModule } from '@angular/material/sidenav';
 import { FlexLayoutModule } from '@angular/flex-layout';
 import { ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { HttpClientModule } from '@angular/common/http';
 
 @NgModule({
@@ -38,10 +38,12 @@ import { HttpClientModule } from '@angular/common/http';
     BrowserAnimationsModule,
     FlexLayoutModule,
     FormsModule,
+    MatSidenavModule,
     ReactiveFormsModule,      // pentru formGroup
     HttpClientModule,
     // Angular Material Modules
     MatTabsModule,
+    MatTooltipModule,
     MatButtonModule,
     MatDividerModule,
     MatListModule,

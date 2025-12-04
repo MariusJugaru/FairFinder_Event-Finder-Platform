@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild, ElementRef, Output, EventEmitter, OnDestroy } from "@angular/core";
 import esri = __esri;
+import { MatDrawer } from '@angular/material/sidenav';
 
 import Config from "@arcgis/core/config";
 import WebMap from "@arcgis/core/WebMap";
@@ -8,7 +9,7 @@ import MapView from "@arcgis/core/views/MapView";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import Graphic from "@arcgis/core/Graphic";
 import Point from "@arcgis/core/geometry/Point";
-
+import { AuthService } from "src/app/services/auth.service";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import FeatureSet from "@arcgis/core/rest/support/FeatureSet";
 import RouteParameters from "@arcgis/core/rest/support/RouteParameters";
@@ -22,7 +23,7 @@ import * as route from "@arcgis/core/rest/route.js";
 export class MapComponent implements OnInit, OnDestroy {
   @Output() mapLoadedEvent = new EventEmitter<boolean>();
   @ViewChild("mapViewNode", { static: true }) private mapViewEl: ElementRef;
-
+  @ViewChild('drawer') drawer!: MatDrawer;
   map: esri.Map;
   view: esri.MapView;
   graphicsLayer: esri.GraphicsLayer;
@@ -35,18 +36,19 @@ export class MapComponent implements OnInit, OnDestroy {
   basemap = "streets-vector";
   loaded = false;
   directionsElement: any;
-
+  loggedIn = false;
   // pentru meniu lateral si search
   menuOpen = false;
   searchQuery = "";
 
-  constructor() { }
+  constructor(private authService: AuthService) { }
 
   ngOnInit() {
     this.initializeMap().then(() => {
       this.loaded = this.view.ready;
       this.mapLoadedEvent.emit(true);
       this.setUserLocation(); // geolocalizare
+      this.loggedIn = this.authService.isLoggedIn();
     });
   }
 
@@ -59,7 +61,11 @@ export class MapComponent implements OnInit, OnDestroy {
   toggleMenu() {
     this.menuOpen = !this.menuOpen;
   }
-
+  logout() {
+    this.authService.logout();
+    this.loggedIn = false;
+    this.drawer.close();
+  }
   // Geolocalizare
   setUserLocation() {
     if (navigator.geolocation) {

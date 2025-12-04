@@ -41,7 +41,7 @@ export class LoginComponent implements OnInit {
           this.authService.saveTokens(res.access_token, res.refresh_token);
 
           // redirect catre home / dashboard
-          this.router.navigate(['/home']);
+          this.router.navigate(['/map']);
         },
         error: (err) => {
           this.errorMessage = err?.error?.error || "Login failed.";

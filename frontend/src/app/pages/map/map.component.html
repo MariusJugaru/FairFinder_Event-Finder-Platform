@@ -1,26 +1,39 @@
-<div class="container">
-    <!-- Sidebar/menu (hidden by default) -->
-    <nav class="sidebar" [class.open]="menuOpen">
+<mat-drawer-container class="container">
+
+    <!-- Drawer-ul Material -->
+    <mat-drawer #drawer mode="over" position="start" class="sidebar">
         <div class="sidebar-header">
             <h3>Menu</h3>
-            <button class="close-btn" (click)="menuOpen = false">&times;</button>
+            <button class="close-btn" (click)="drawer.close()">&times;</button>
         </div>
-        <ul class="sidebar-list">
-            <li><a href="#"><i class="fas fa-user"></i> Profile</a></li>
-            <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
-            <li><a href="#"><i class="fas fa-question-circle"></i> Help</a></li>
-        </ul>
-    </nav>
 
-    <!-- The DIV that will contain the map -->
-    <div #mapViewNode class="map-view"></div>
+        <ul class="sidebar-list">
+            <!-- Dacă NU este logat -->
+            <ng-container *ngIf="!loggedIn">
+                <li><a routerLink="/login"><i class="fas fa-sign-in-alt"></i> Login</a></li>
+            </ng-container>
+
+            <!-- Dacă este logat -->
+            <ng-container *ngIf="loggedIn">
+                <li><a href="#"><i class="fas fa-user"></i> Profile</a></li>
+                <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="#"><i class="fas fa-question-circle"></i> Help</a></li>
+                <li><a (click)="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ng-container>
+        </ul>
+    </mat-drawer>
+
+    <!-- Harta principala -->
+    <div class="map-view" #mapViewNode></div>
 
     <!-- Search Bar -->
     <div class="search-container">
         <input type="text" placeholder="Search for an event..." [(ngModel)]="searchQuery" />
         <button (click)="searchLocation()">Search</button>
     </div>
-</div>
 
-<!-- Floating Action Button (FAB) pentru meniu -->
-<button class="fab" (click)="toggleMenu()">☰</button>
+</mat-drawer-container>
+
+<!-- Floating Action Button -->
+<button class="fab" (click)="drawer.toggle()" [matTooltip]="drawer.opened ? 'Close menu' : 'Open menu'"
+    matTooltipPosition="right">☰</button>
