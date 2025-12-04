@@ -313,7 +313,6 @@ def validate_register_data(data: dict):
         return False, {"status": "Missing or invalid 'email'."}
     if len(data["email"]) > 50:
         return False, {"status": "Email too long (max 50 characters)."}
-    # Simple regex to check for 'something@something.com'
     email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
     if not re.match(email_regex, data["email"]):
         return False, {"status": "Invalid email format."}
@@ -321,8 +320,6 @@ def validate_register_data(data: dict):
     # 4. Password Validation
     if "password" not in data or not isinstance(data["password"], str):
         return False, {"status": "Missing or invalid 'password'."}
-    if len(data["password"]) < 8:
-        return False, {"status": "Password must be at least 8 characters long."}
     if not data["password"].strip():
         return False, {"status": "Password cannot be empty spaces."}
 
