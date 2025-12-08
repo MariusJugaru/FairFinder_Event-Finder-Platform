@@ -1,5 +1,5 @@
 from flask import Flask
-from flask import request, session, jsonify, Response
+from flask import request, session, jsonify, Response, send_from_directory
 from flask import url_for, redirect
 
 from flask_cors import CORS
@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 
 from models import db
 import jwt
+import os
+from werkzeug.utils import secure_filename
 
 # Utils
 from utils import *
@@ -19,7 +21,8 @@ ACCESS_TOKEN_EXPIRES_MIN = 15
 REFRESH_TOKEN_EXPIRES_DAYS = 7
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:admin@localhost:3306/fair-finder-db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+UPLOAD_FOLDER = "uploads/avatars"
+ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
 db.init_app(app)
 CORS(app)
 def create_access_token(user_id):
@@ -175,6 +178,59 @@ def get_participation_endpoint():
 @app.route("/get_user_part/<int:user_id>", methods=["GET"])
 def get_user_part(user_id):
     return jsonify(get_user_participations(user_id)), 200
+
+@app.route("/update_user/<int:user_id>", methods=["PUT"])
+def update_user_endpoint(user_id):
+    print(user_id)
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.get_json()
+
+    if "firstName" in data:
+        user.first_name = data["firstName"]
+    if "lastName" in data:
+        user.last_name = data["lastName"]
+    if "birthday" in data:
+        try:
+            user.birthday = datetime.fromisoformat(data["birthday"]).date()
+        except Exception as e:
+            return jsonify({"error": "Invalid birthday format"}), 400
+
+    db.session.commit()
+    return jsonify(user.to_dict()), 200
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route("/upload_avatar/<int:user_id>", methods=["POST"])
+def upload_avatar(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    if 'avatar' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+
+    file = request.files['avatar']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+
+    if file and allowed_file(file.filename):
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+        filename = secure_filename(f"user_{user_id}_{file.filename}")
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(filepath)
+
+        user.profile_picture = f"http://127.0.0.1:8081/uploads/avatars/{filename}"
+        db.session.commit()
+
+        return jsonify({"profilePicture": user.profile_picture}), 200
+
+    return jsonify({"error": "Invalid file"}), 400
+@app.route("/uploads/avatars/<filename>")
+def uploaded_file(filename):
+    return send_from_directory("uploads/avatars", filename)
 
 @app.route("/get_event_part/<int:event_id>", methods=["GET"])
 def get_event_part(event_id):

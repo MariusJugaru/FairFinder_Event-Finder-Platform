@@ -31,19 +31,20 @@ class User(db.Model):
     password_hash = db.Column(db.String(200), nullable = False)
     birthday = db.Column(db.Date, nullable = False)
     created_at = db.Column(db.DateTime, default = lambda: datetime.now(timezone.utc), nullable = False)
-
+    profile_picture = db.Column(db.String(200), nullable=True)
     events = db.relationship("Event", back_populates = "owner", cascade = "all, delete-orphan")
     participations = db.relationship("Participation", back_populates = "user", cascade = "all, delete-orphan")
 
     def to_dict(self):
         return {
             "id": self.id,
-            "first_name": self.first_name,
-            "last_name": self.last_name,
+            "firstName": self.first_name,
+            "lastName": self.last_name,
             "email": self.email,
             # "password_hash": self.password_hash,
             "birthday": self.birthday.isoformat(),
-            "created_at": self.created_at.isoformat()
+            "created_at": self.created_at.isoformat(),
+            "profilePicture": self.profile_picture
         }
     
     def set_password(self, password):

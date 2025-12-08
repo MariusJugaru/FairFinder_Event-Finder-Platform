@@ -1,0 +1,49 @@
+<div class="profile-container">
+    <mat-card class="profile-card mat-elevation-z6">
+        <h1 class="profile-title">Your Profile</h1>
+
+        <!-- Profile picture -->
+        <div class="profile-picture-container">
+            <img [src]="user?.profilePicture || 'assets/default-avatar.png'" alt="Profile Picture"
+                class="profile-picture">
+            <input type="file" (change)="onProfilePicChange($event)" hidden #fileInput>
+            <button mat-mini-fab color="primary" class="edit-pic-btn" (click)="fileInput.click()">
+                <mat-icon>edit</mat-icon>
+            </button>
+        </div>
+
+        <!-- User info form -->
+        <form [formGroup]="profileForm" (ngSubmit)="onSave()">
+            <!-- First Name -->
+            <mat-form-field appearance="fill" class="full-width">
+                <mat-label>First Name</mat-label>
+                <input matInput formControlName="firstName">
+            </mat-form-field>
+
+            <!-- Last Name -->
+            <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Last Name</mat-label>
+                <input matInput formControlName="lastName">
+            </mat-form-field>
+
+            <!-- Email (readonly) -->
+            <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Email</mat-label>
+                <input matInput formControlName="email" readonly>
+            </mat-form-field>
+
+            <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Birthday</mat-label>
+                <input matInput [value]="user?.birthday | date:'mediumDate'" readonly>
+            </mat-form-field>
+            <button mat-raised-button color="primary" class="save-btn" [disabled]="profileForm.invalid">
+                Save Changes
+            </button>
+        </form>
+
+        <div class="profile-stats">
+            <h3>Statistics</h3>
+            <p>Events created: 0</p>
+        </div>
+    </mat-card>
+</div>

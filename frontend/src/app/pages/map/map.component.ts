@@ -57,7 +57,9 @@ export class MapComponent implements OnInit, OnDestroy {
       this.view.container = null;
     }
   }
-
+  isLoggedIn(): boolean {
+    return this.authService.isLoggedIn();
+  }
   toggleMenu() {
     this.menuOpen = !this.menuOpen;
   }
