@@ -28,4 +28,10 @@ export class AuthService {
   isLoggedIn(): boolean {
     return !!localStorage.getItem("access_token");
   }
+  getUserId(): number | null {
+    const token = localStorage.getItem('access_token');
+    if (!token) return null;
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.user_id;
+  }
 }

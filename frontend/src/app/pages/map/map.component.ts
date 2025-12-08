@@ -14,7 +14,7 @@ import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import FeatureSet from "@arcgis/core/rest/support/FeatureSet";
 import RouteParameters from "@arcgis/core/rest/support/RouteParameters";
 import * as route from "@arcgis/core/rest/route.js";
-
+import { Router } from '@angular/router';
 @Component({
   selector: "app-map",
   templateUrl: "./map.component.html",
@@ -41,7 +41,7 @@ export class MapComponent implements OnInit, OnDestroy {
   menuOpen = false;
   searchQuery = "";
 
-  constructor(private authService: AuthService) { }
+  constructor(private authService: AuthService, private router: Router) { }
 
   ngOnInit() {
     this.initializeMap().then(() => {
@@ -51,7 +51,12 @@ export class MapComponent implements OnInit, OnDestroy {
       this.loggedIn = this.authService.isLoggedIn();
     });
   }
-
+  goToProfile() {
+    const userId = this.authService.getUserId();
+    if (userId) {
+      this.router.navigate(['/profile', userId]);
+    }
+  }
   ngOnDestroy() {
     if (this.view) {
       this.view.container = null;

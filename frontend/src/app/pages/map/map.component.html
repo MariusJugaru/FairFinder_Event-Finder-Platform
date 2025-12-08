@@ -15,7 +15,7 @@
 
             <!-- Dacă este logat -->
             <ng-container *ngIf="isLoggedIn()">
-                <li><a href="#"><i class="fas fa-user"></i> Profile</a></li>
+                <li class="clickable"><a (click)="goToProfile()"><i class="fas fa-user"></i> Profile</a></li>
                 <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
                 <li><a href="#"><i class="fas fa-question-circle"></i> Help</a></li>
                 <li><a (click)="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
