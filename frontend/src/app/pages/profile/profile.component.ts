@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
+import { AuthService } from 'src/app/services/auth.service';
+import { ToastService } from 'src/app/services/toast.service';
 
 @Component({
   selector: 'app-profile',
@@ -17,7 +19,10 @@ export class ProfileComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private route: ActivatedRoute,
-    private http: HttpClient
+    private http: HttpClient,
+    private authService: AuthService,
+    private router: Router,
+    private toast: ToastService
   ) { }
 
   ngOnInit() {
@@ -30,7 +35,10 @@ export class ProfileComponent implements OnInit {
       lastName: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]]
     });
-
+    const loggedIn = this.authService.getUserId();
+    //if (loggedIn!=this.userId){
+    //  this.router.navigate()
+    //}
     this.loadUser();
   }
 
@@ -48,7 +56,7 @@ export class ProfileComponent implements OnInit {
         },
         error: (err) => {
           console.error('Failed to load user', err);
-          alert('Failed to load user profile');
+          this.toast.showToast('Not authorized to view this profile.', 'error');
         }
       });
   }
@@ -84,7 +92,10 @@ export class ProfileComponent implements OnInit {
 
       this.http.put<any>(`http://127.0.0.1:8081/update_user/${this.userId}`, updatedUser)
         .subscribe({
-          next: () => console.log('Profile updated.'),
+          next: () => {
+            console.log('Profile updated.');
+            this.toast.showToast("Profile updated succesfully!", 'success');
+          },
           error: (err) => {
             console.error('Failed to update user', err);
             alert('Failed to update profile');

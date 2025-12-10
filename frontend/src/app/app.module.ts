@@ -25,6 +25,9 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { HttpClientModule } from '@angular/common/http';
 import { ProfileComponent } from './pages/profile/profile.component';
+import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import { AuthInterceptor } from './interceptors/auth.interceptor';
+import { ToastComponent } from './pages/toast/toast.component';
 
 @NgModule({
   declarations: [
@@ -33,7 +36,8 @@ import { ProfileComponent } from './pages/profile/profile.component';
     MapComponent,
     LoginComponent,
     RegisterComponent,
-    ProfileComponent
+    ProfileComponent,
+    ToastComponent
   ],
   imports: [
     BrowserModule,
@@ -55,7 +59,7 @@ import { ProfileComponent } from './pages/profile/profile.component';
     MatFormFieldModule,
     MatInputModule
   ],
-  providers: [],
+  providers: [{ provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true }],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

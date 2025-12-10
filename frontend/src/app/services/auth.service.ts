@@ -34,4 +34,7 @@ export class AuthService {
     const payload = JSON.parse(atob(token.split('.')[1]));
     return payload.user_id;
   }
+  getToken() {
+    return localStorage.getItem("access_token");
+  }
 }

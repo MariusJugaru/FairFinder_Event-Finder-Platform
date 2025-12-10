@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 
 # Utils
 from utils import *
-
+from auth import login_required
 app = Flask(__name__)
 app.secret_key = "SECRET_KEY"
 
@@ -148,8 +148,12 @@ def delete():
     return delete_all_participations()
 
 @app.route("/get_user", methods=["GET"])
+@login_required
 def get_user_endpoint():
     user_id = request.args.get("user_id", type = int)
+    if user_id!=request.user_id:
+        print("De ce")
+        return jsonify({"error":"Not authorized"}),403
     if user_id is None:
         return jsonify({"error": "Missing user_id parameter"}), 400
     
@@ -180,8 +184,10 @@ def get_user_part(user_id):
     return jsonify(get_user_participations(user_id)), 200
 
 @app.route("/update_user/<int:user_id>", methods=["PUT"])
+@login_required
 def update_user_endpoint(user_id):
-    print(user_id)
+    if user_id!=request.user_id:
+        return jsonify({"error":"Not authorized"}),403
     user = User.query.get(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
@@ -204,7 +210,10 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @app.route("/upload_avatar/<int:user_id>", methods=["POST"])
+@login_required
 def upload_avatar(user_id):
+    if user_id!=request.user_id:
+        return jsonify({"error": "Not authorized"}), 403
     user = User.query.get(user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
