@@ -31,7 +31,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(200), nullable = False)
     birthday = db.Column(db.Date, nullable = False)
     created_at = db.Column(db.DateTime, default = lambda: datetime.now(timezone.utc), nullable = False)
-    profile_picture = db.Column(db.String(200), nullable=True)
+    profile_picture = db.Column(db.String(200))
     events = db.relationship("Event", back_populates = "owner", cascade = "all, delete-orphan")
     participations = db.relationship("Participation", back_populates = "user", cascade = "all, delete-orphan")
 
