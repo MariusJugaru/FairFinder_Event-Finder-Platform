@@ -105,7 +105,7 @@ def login():
 def get_users():
     return jsonify(get_all_users()), 200
 
-@app.route("/post_event", methods=["GET", "POST"])
+@app.route("/post_event", methods=["POST"])
 def post_event():
     if request.method == "POST":
         data = request.get_json()
@@ -114,11 +114,10 @@ def post_event():
         if not status:
             return jsonify(message), 400
         
+        print(data)
+
         create_event(data)
-        return redirect(url_for("home"))
-    else:
-        # TODO: Return TBD.
-        return "TODO"
+        return jsonify({"status": "Event added"}), 200
 
 @app.route("/get_events", methods=["GET"])
 def get_events():

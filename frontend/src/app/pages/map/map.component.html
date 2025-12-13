@@ -1,4 +1,4 @@
-<mat-drawer-container class="container">
+<mat-drawer-container class="container" [hasBackdrop]="false">
 
     <!-- Drawer-ul Material -->
     <mat-drawer #drawer mode="over" position="start" class="sidebar">
@@ -23,6 +23,59 @@
         </ul>
     </mat-drawer>
 
+    <!-- Right drawer for adding an event -->
+    <mat-drawer #rightMenu mode="over" position="end" class="sidebar right-sidebar">
+        <div class="sidebar-header">
+            <h3>Add event</h3>
+            <button class="close-btn" (click)="rightMenu.close()">&times;</button>
+        </div>
+
+        <br>
+        <div class="geometry-select">
+            <label for="geometryType">Select type:</label>
+            <select id="geometryType" [(ngModel)]="geometryType" class="custom-select">
+                <option value="Point">Point</option>
+                <option value="Polygon">Polygon</option>
+                <option value="Polyline">Polyline</option>
+            </select>
+        </div>
+
+        <form class="event-form">
+            <label for="title">Title:</label>
+            <input id="title" type="text" [(ngModel)]="eventData.title" name="title" maxlength="40" required />
+
+            <label for="description">Description:</label>
+            <textarea id="description" [(ngModel)]="eventData.description" name="description" maxlength="300" rows="3" required></textarea>
+
+            <label for="start_time">Start Time:</label>
+            <input id="start_time" type="datetime-local" [(ngModel)]="eventData.start_time" name="start_time" required />
+
+            <label for="end_time">End Time:</label>
+            <input id="end_time" type="datetime-local" [(ngModel)]="eventData.end_time" name="end_time" required />
+
+            <label for="color">Color:</label>
+            <input id="color" type="color" [(ngModel)]="eventData.color" name="color" />
+        </form>
+
+        <div class="features-container">
+            <ul class="sidebar-list">
+                <li *ngFor="let feature of mapFeatures" class="feature-item">
+                    <div class="feature-content">
+                        <span>
+                            {{ feature.type }}
+                            <span *ngIf="feature.type === 'Point'">
+                                ({{ feature.graphic.geometry.latitude.toFixed(6) }}, {{ feature.graphic.geometry.longitude.toFixed(6) }})
+                            </span>
+                        </span>
+                        <button class="remove-btn" (click)="removeFeature(feature.id)">x</button>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <button class="save-event-btn" (click)="saveEvent()">Save Event</button>
+    </mat-drawer>
+
     <!-- Harta principala -->
     <div class="map-view" #mapViewNode></div>
 
@@ -37,3 +90,5 @@
 <!-- Floating Action Button -->
 <button class="fab" (click)="drawer.toggle()" [matTooltip]="drawer.opened ? 'Close menu' : 'Open menu'"
     matTooltipPosition="right">☰</button>
+
+<button class="fab-right" (click)="rightMenu.toggle()" matTooltip="Add events">+</button>

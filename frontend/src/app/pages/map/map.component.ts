@@ -15,6 +15,46 @@ import FeatureSet from "@arcgis/core/rest/support/FeatureSet";
 import RouteParameters from "@arcgis/core/rest/support/RouteParameters";
 import * as route from "@arcgis/core/rest/route.js";
 import { Router } from '@angular/router';
+
+import { Injectable } from '@angular/core';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Observable } from 'rxjs';
+
+import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol";
+import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
+import SimpleLineSymbol from "@arcgis/core/symbols/SimpleLineSymbol";
+import Polygon from "@arcgis/core/geometry/Polygon";
+import Polyline from "@arcgis/core/geometry/Polyline";
+
+
+@Injectable({
+  providedIn: 'root'
+})
+export class EventService {
+  private baseUrl = 'http://127.0.0.1:8081';
+
+  constructor(private http: HttpClient, private authService: AuthService) { }
+
+  saveEvent(eventData: any): Observable<any> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+    return this.http.post(`${this.baseUrl}/post_event`, eventData, { headers });
+  }
+
+  getAllEvents(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/get_events`);
+  }
+}
+
+export interface MapFeature {
+  id: string;
+  type: 'Point' | 'Polygon' | 'Polyline';
+  graphic: esri.Graphic;
+}
+
 @Component({
   selector: "app-map",
   templateUrl: "./map.component.html",
@@ -24,6 +64,21 @@ export class MapComponent implements OnInit, OnDestroy {
   @Output() mapLoadedEvent = new EventEmitter<boolean>();
   @ViewChild("mapViewNode", { static: true }) private mapViewEl: ElementRef;
   @ViewChild('drawer') drawer!: MatDrawer;
+
+  @ViewChild('rightMenu') rightMenu!: MatDrawer;
+  tempPoints: esri.Graphic[] = []
+  geometryType: 'Point' | 'Polygon' | 'Polyline' = 'Point';
+  mapFeatures: MapFeature[] = [];
+  eventData = {
+    title: '',
+    description: '',
+    start_time: '',
+    end_time: '',
+    color: '#1abc9c'  // culoare default
+  };
+  graphicsLayerEvents: GraphicsLayer;
+
+
   map: esri.Map;
   view: esri.MapView;
   graphicsLayer: esri.GraphicsLayer;
@@ -41,7 +96,7 @@ export class MapComponent implements OnInit, OnDestroy {
   menuOpen = false;
   searchQuery = "";
 
-  constructor(private authService: AuthService, private router: Router) { }
+  constructor(private authService: AuthService, private router: Router, private eventService: EventService) { }
 
   ngOnInit() {
     this.initializeMap().then(() => {
@@ -50,7 +105,24 @@ export class MapComponent implements OnInit, OnDestroy {
       this.setUserLocation(); // geolocalizare
       this.loggedIn = this.authService.isLoggedIn();
     });
+
+    this.loadEventsOnMap();
   }
+  ngAfterViewInit() {
+    this.rightMenu.closedStart.subscribe(() => {
+      this.tempPoints.forEach(graphic => this.graphicsLayerUserPoints.remove(graphic));
+      this.tempPoints = [];
+      this.mapFeatures = [];
+      this.eventData = {
+        title: '',
+        description: '',
+        start_time: '',
+        end_time: '',
+        color: '#1abc9c'
+      };
+    });
+  }
+
   goToProfile() {
     const userId = this.authService.getUserId();
     if (userId) {
@@ -127,6 +199,34 @@ export class MapComponent implements OnInit, OnDestroy {
       });
 
       await this.view.when();
+
+      this.view.on("click", (event) => {
+        if (!this.rightMenu.opened) {
+          return;
+        }
+
+        const point = this.view.toMap(event);
+
+        if (!point) return;
+
+        const latitude = point.latitude;
+        const longitude = point.longitude;
+
+        console.log("Lat:", latitude, "Lon:", longitude);
+
+        const graphic = this.addPoint(latitude, longitude);
+
+        const id = Date.now().toString();
+
+        this.mapFeatures.push({
+          id,
+          type: 'Point',
+          graphic
+        });
+
+        this.tempPoints.push(graphic);
+      })
+
       console.log("ArcGIS map loaded");
 
       this.addRouting();
@@ -162,6 +262,82 @@ export class MapComponent implements OnInit, OnDestroy {
     this.map.add(this.graphicsLayerUserPoints);
     this.graphicsLayerRoutes = new GraphicsLayer();
     this.map.add(this.graphicsLayerRoutes);
+
+    this.graphicsLayerEvents = new GraphicsLayer();
+    this.map.add(this.graphicsLayerEvents);
+  }
+
+  loadEventsOnMap() {
+    this.eventService.getAllEvents().subscribe({
+      next: (events) => {
+        events.forEach(event => {
+          let graphic: Graphic;
+          const geom = event.geometry;
+
+          const startDate = new Date(event.start_time);
+          const endDate = new Date(event.end_time);
+
+          const startStr = startDate.toLocaleString();
+          const endStr = endDate.toLocaleString();
+
+          const popupTemplate = {
+            title: event.title,
+            content: `
+              <b>Descriere:</b> ${event.description}<br>
+              <b>Start:</b> ${startStr}<br>
+              <b>End:</b> ${endStr}
+            `
+          };
+          
+          switch (geom.type) {
+            case 'Point':
+              const point = new Point({ longitude: geom.coordinates[0], latitude: geom.coordinates[1] });
+              graphic = new Graphic({
+                geometry: point,
+                symbol: new SimpleMarkerSymbol({
+                  color: event.color ? this.hexToRgbArray(event.color) : [226, 119, 40],
+                  outline: { color: [255, 255, 255], width: 1 }
+                }),
+                popupTemplate: popupTemplate
+              });
+              break;
+
+            case 'Polygon':
+              const polygon = new Polygon({ rings: geom.coordinates });
+              graphic = new Graphic({
+                geometry: polygon,
+                symbol: new SimpleFillSymbol({
+                  color: event.color ? [...this.hexToRgbArray(event.color), 0.5] : [226, 119, 40, 0.5],
+                  outline: new SimpleLineSymbol({ color: [255, 255, 255], width: 1 })
+                }),
+                popupTemplate: popupTemplate
+              });
+              break;
+
+            case 'LineString':
+            case 'Polyline':
+              const polyline = new Polyline({ paths: geom.coordinates });
+              graphic = new Graphic({
+                geometry: polyline,
+                symbol: new SimpleLineSymbol({
+                  color: event.color ? this.hexToRgbArray(event.color) : [226, 119, 40],
+                  width: 2
+                }),
+                popupTemplate: popupTemplate
+              });
+              break;
+          }
+
+          this.graphicsLayerEvents.add(graphic);
+        });
+      },
+      error: (err) => console.error("Error loading events:", err)
+    });
+  }
+
+  hexToRgbArray(hex: string): number[] {
+    const bigint = parseInt(hex.replace('#',''),16);
+    return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
   }
 
   addRouting() {
@@ -198,6 +374,97 @@ export class MapComponent implements OnInit, OnDestroy {
     };
     let pointGraphic: esri.Graphic = new Graphic({ geometry: point, symbol: simpleMarkerSymbol });
     this.graphicsLayerUserPoints.add(pointGraphic);
+
+    return pointGraphic;
+  }
+
+  removeFeature(id: string) {
+    const index = this.mapFeatures.findIndex(f => f.id === id);
+    if (index !== -1) {
+      const feature = this.mapFeatures[index];
+      this.graphicsLayerUserPoints.remove(feature.graphic);
+      this.mapFeatures.splice(index, 1);
+    }
+  }
+
+  saveEvent() {
+    console.log('Saving event:', this.eventData, this.mapFeatures);
+
+    if (this.mapFeatures.length === 0) {
+      console.error("No geometry selected!");
+      return;
+    }
+
+    let geometry: any;
+
+    switch (this.geometryType) {
+      case 'Point':
+        const point = this.mapFeatures[0].graphic.geometry as __esri.Point;
+        geometry = {
+          type: 'Point',
+          coordinates: [point.x, point.y] // x = longitude, y = latitude
+        };
+        break;
+
+      case 'Polygon':
+        geometry = {
+          type: 'Polygon',
+          coordinates: [ this.tempPoints.map(p => {
+            const pt = p.geometry as __esri.Point;
+            return [pt.x, pt.y];
+          })]
+        };
+        break;
+
+      case 'Polyline':
+        geometry = {
+          type: 'LineString',
+          coordinates: this.tempPoints.map(p => {
+            const pt = p.geometry as __esri.Point;
+            return [pt.x, pt.y];
+          })
+        };
+        break;
+
+      default:
+        console.error("Unknown geometry type");
+        return;
+    }
+
+    const payload = {
+      owner_id: this.authService.getUserId(),
+      title: this.eventData.title,
+      description: this.eventData.description,
+      start_time: this.eventData.start_time,
+      end_time: this.eventData.end_time,
+      geometry: geometry,
+      color: this.eventData.color
+    };
+
+    this.eventService.saveEvent(payload)
+      .subscribe({
+        next: res => {
+          console.log('Event saved successfully', res);
+
+          this.loadEventsOnMap();
+
+          // Reset form
+          this.eventData = {
+            title: '',
+            description: '',
+            start_time: '',
+            end_time: '',
+            color: '#1abc9c'
+          };
+          this.mapFeatures = [];
+          this.tempPoints.forEach(graphic => this.graphicsLayerUserPoints.remove(graphic));
+          this.tempPoints = [];
+          this.rightMenu.close();
+        },
+        error: err => {
+          console.error('Error saving event:', err);
+        }
+      });
   }
 
   removePoints() { this.graphicsLayerUserPoints.removeAll(); }
