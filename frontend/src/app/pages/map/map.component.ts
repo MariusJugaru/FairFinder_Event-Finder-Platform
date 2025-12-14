@@ -25,6 +25,7 @@ import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
 import SimpleLineSymbol from "@arcgis/core/symbols/SimpleLineSymbol";
 import Polygon from "@arcgis/core/geometry/Polygon";
 import Polyline from "@arcgis/core/geometry/Polyline";
+import { ToastService } from "src/app/services/toast.service";
 
 
 @Injectable({
@@ -54,6 +55,7 @@ export interface MapFeature {
   type: 'Point' | 'Polygon' | 'Polyline';
   graphic: esri.Graphic;
 }
+type AppMode = 'NONE' | 'ADD_EVENT' | 'ROUTING';
 
 @Component({
   selector: "app-map",
@@ -61,6 +63,9 @@ export interface MapFeature {
   styleUrls: ["./map.component.scss"],
 })
 export class MapComponent implements OnInit, OnDestroy {
+  appMode: AppMode = 'NONE';
+  fabOpen = false;
+
   @Output() mapLoadedEvent = new EventEmitter<boolean>();
   @ViewChild("mapViewNode", { static: true }) private mapViewEl: ElementRef;
   @ViewChild('drawer') drawer!: MatDrawer;
@@ -96,7 +101,9 @@ export class MapComponent implements OnInit, OnDestroy {
   menuOpen = false;
   searchQuery = "";
 
-  constructor(private authService: AuthService, private router: Router, private eventService: EventService) { }
+
+
+  constructor(private authService: AuthService, private router: Router, private eventService: EventService, private toast: ToastService) { }
 
   ngOnInit() {
     this.initializeMap().then(() => {
@@ -110,7 +117,16 @@ export class MapComponent implements OnInit, OnDestroy {
   }
   ngAfterViewInit() {
     this.rightMenu.closedStart.subscribe(() => {
-      this.tempPoints.forEach(graphic => this.graphicsLayerUserPoints.remove(graphic));
+
+      // reset doar daca eram in ADD_EVENT
+      if (this.appMode === 'ADD_EVENT') {
+        this.appMode = 'NONE';
+      }
+
+      // cleanup existent
+      this.tempPoints.forEach(graphic =>
+        this.graphicsLayerUserPoints.remove(graphic)
+      );
       this.tempPoints = [];
       this.mapFeatures = [];
       this.eventData = {
@@ -121,6 +137,23 @@ export class MapComponent implements OnInit, OnDestroy {
         color: '#1abc9c'
       };
     });
+  }
+
+  toggleFabMenu() {
+    this.fabOpen = !this.fabOpen;
+  }
+
+  openAddEvent() {
+    this.appMode = 'ADD_EVENT';
+    this.fabOpen = false;
+    this.rightMenu.open();
+  }
+
+  startRoutingMode() {
+    this.appMode = 'ROUTING';
+    this.fabOpen = false;
+    this.clearRouter();
+    this.toast.showToast('Click on map to add start & destination', 'info');
   }
 
   goToProfile() {
@@ -201,31 +234,18 @@ export class MapComponent implements OnInit, OnDestroy {
       await this.view.when();
 
       this.view.on("click", (event) => {
-        if (!this.rightMenu.opened) {
-          return;
-        }
-
         const point = this.view.toMap(event);
-
         if (!point) return;
 
-        const latitude = point.latitude;
-        const longitude = point.longitude;
+        if (this.appMode === 'ADD_EVENT') {
+          this.handleAddEventClick(point);
+        }
 
-        console.log("Lat:", latitude, "Lon:", longitude);
+        if (this.appMode === 'ROUTING') {
+          this.handleRoutingClick(point);
+        }
+      });
 
-        const graphic = this.addPoint(latitude, longitude);
-
-        const id = Date.now().toString();
-
-        this.mapFeatures.push({
-          id,
-          type: 'Point',
-          graphic
-        });
-
-        this.tempPoints.push(graphic);
-      })
 
       console.log("ArcGIS map loaded");
 
@@ -236,6 +256,35 @@ export class MapComponent implements OnInit, OnDestroy {
       alert("Error loading the map");
     }
   }
+  handleAddEventClick(point: __esri.Point) {
+    const graphic = this.addPoint(point.latitude, point.longitude);
+
+    const id = Date.now().toString();
+
+    this.mapFeatures.push({
+      id,
+      type: 'Point',
+      graphic
+    });
+
+    this.tempPoints.push(graphic);
+  }
+  handleRoutingClick(point: __esri.Point) {
+    if (this.graphicsLayerUserPoints.graphics.length === 0) {
+      this.addPoint(point.latitude, point.longitude);
+    }
+    else if (this.graphicsLayerUserPoints.graphics.length === 1) {
+      this.addPoint(point.latitude, point.longitude);
+      this.calculateRoute(
+        "https://route-api.arcgis.com/arcgis/rest/services/World/Route/NAServer/Route_World"
+      );
+    }
+    else {
+      this.clearRouter();
+    }
+  }
+
+
 
   addFeatureLayers() {
     this.trailheadsLayer = new FeatureLayer({
@@ -288,7 +337,7 @@ export class MapComponent implements OnInit, OnDestroy {
               <b>End:</b> ${endStr}
             `
           };
-          
+
           switch (geom.type) {
             case 'Point':
               const point = new Point({ longitude: geom.coordinates[0], latitude: geom.coordinates[1] });
@@ -336,7 +385,7 @@ export class MapComponent implements OnInit, OnDestroy {
   }
 
   hexToRgbArray(hex: string): number[] {
-    const bigint = parseInt(hex.replace('#',''),16);
+    const bigint = parseInt(hex.replace('#', ''), 16);
     return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
   }
 
@@ -409,7 +458,7 @@ export class MapComponent implements OnInit, OnDestroy {
       case 'Polygon':
         geometry = {
           type: 'Polygon',
-          coordinates: [ this.tempPoints.map(p => {
+          coordinates: [this.tempPoints.map(p => {
             const pt = p.geometry as __esri.Point;
             return [pt.x, pt.y];
           })]

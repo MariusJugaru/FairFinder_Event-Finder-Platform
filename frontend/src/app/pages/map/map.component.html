@@ -45,10 +45,12 @@
             <input id="title" type="text" [(ngModel)]="eventData.title" name="title" maxlength="40" required />
 
             <label for="description">Description:</label>
-            <textarea id="description" [(ngModel)]="eventData.description" name="description" maxlength="300" rows="3" required></textarea>
+            <textarea id="description" [(ngModel)]="eventData.description" name="description" maxlength="300" rows="3"
+                required></textarea>
 
             <label for="start_time">Start Time:</label>
-            <input id="start_time" type="datetime-local" [(ngModel)]="eventData.start_time" name="start_time" required />
+            <input id="start_time" type="datetime-local" [(ngModel)]="eventData.start_time" name="start_time"
+                required />
 
             <label for="end_time">End Time:</label>
             <input id="end_time" type="datetime-local" [(ngModel)]="eventData.end_time" name="end_time" required />
@@ -64,7 +66,8 @@
                         <span>
                             {{ feature.type }}
                             <span *ngIf="feature.type === 'Point'">
-                                ({{ feature.graphic.geometry.latitude.toFixed(6) }}, {{ feature.graphic.geometry.longitude.toFixed(6) }})
+                                ({{ feature.graphic.geometry.latitude.toFixed(6) }}, {{
+                                feature.graphic.geometry.longitude.toFixed(6) }})
                             </span>
                         </span>
                         <button class="remove-btn" (click)="removeFeature(feature.id)">x</button>
@@ -91,4 +94,16 @@
 <button class="fab" (click)="drawer.toggle()" [matTooltip]="drawer.opened ? 'Close menu' : 'Open menu'"
     matTooltipPosition="right">☰</button>
 
-<button class="fab-right" (click)="rightMenu.toggle()" matTooltip="Add events">+</button>
+<div class="fab-container">
+    <button class="fab-right main" (click)="toggleFabMenu()">+</button>
+
+    <button class="fab-option route" *ngIf="fabOpen" (click)="startRoutingMode()" matTooltip="Routing"
+        matTooltipPosition="left">
+        🧭
+    </button>
+
+    <button class="fab-option event" *ngIf="fabOpen" (click)="openAddEvent()" matTooltip="Add event"
+        matTooltipPosition="left">
+        📍
+    </button>
+</div>

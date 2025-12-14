@@ -110,7 +110,7 @@
   padding: 10px 15px;
   display: flex;
   align-items: center;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
 .feature-content {
@@ -198,6 +198,7 @@
   margin-left: 10px;
   font-size: 1rem;
 }
+
 .remove-btn:hover {
   color: #c0392b;
 }
@@ -301,4 +302,56 @@
 
 .search-container button:hover {
   background-color: #16a085;
+}
+
+.fab-container {
+  position: fixed;
+  bottom: 40px;
+  right: 20px;
+  width: 55px;
+  height: 55px;
+  z-index: 1300;
+}
+
+
+
+.fab-main {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  background-color: #1abc9c;
+  color: white;
+  border: none;
+  font-size: 28px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.fab-option {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: none;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+
+
+.fab-option.route {
+  bottom: 65px;
+  background-color: #3498db;
+}
+
+.fab-option.event {
+  bottom: 125px;
+  background-color: #9b59b6;
 }
