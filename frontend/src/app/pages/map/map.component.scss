@@ -216,39 +216,57 @@
 .input-wrapper {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   background: white;
   border-radius: 4px;
   overflow: hidden;
+  width: 100%;
+  height: 36px;
   position: relative;
+}
+
+.input-wrapper input {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  border: none;
+  padding: 0 10px;
+  height: 100%;
+  outline: none;
+  font-size: 0.95rem;
+  color: #2c3e50;
+  background: transparent;
 }
 
 .route-input-group input {
   border: none;
   padding: 8px 10px;
-  width: 100%;
+  flex: 1;
   outline: none;
   font-size: 0.95rem;
   color: #2c3e50;
   cursor: pointer;
+  min-width: 0;
 }
 
-/* Buttons inside inputs (X and Target) */
 .icon-btn {
+  width: 40px;
+  height: 100%;
+  flex-shrink: 0;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 0 10px;
-  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.2s;
+  padding: 0;
+  margin: 0;
+  z-index: 10;
 }
 
 .clear-btn {
   color: #95a5a6;
   font-size: 1.2rem;
-  font-weight: bold;
 }
 
 .clear-btn:hover {
@@ -257,12 +275,18 @@
 
 .loc-btn {
   color: #3498db;
-  font-size: 1rem;
+  font-size: 1.1rem;
+}
+
+.loc-btn i {
+  font-size: 1.2rem;
+  color: #3498db;
+  display: inline-block;
 }
 
 .loc-btn:hover {
   color: #2980b9;
-  transform: scale(1.1);
+  background-color: rgba(52, 152, 219, 0.1);
 }
 
 .route-input-group.active-input {
