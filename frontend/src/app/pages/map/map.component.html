@@ -1,6 +1,5 @@
 <mat-drawer-container class="container" [hasBackdrop]="false">
 
-    <!-- Drawer-ul Material -->
     <mat-drawer #drawer mode="over" position="start" class="sidebar">
         <div class="sidebar-header">
             <h3>Menu</h3>
@@ -8,94 +7,125 @@
         </div>
 
         <ul class="sidebar-list">
-            <!-- Dacă NU este logat -->
             <ng-container *ngIf="!loggedIn">
                 <li><a routerLink="/login"><i class="fas fa-sign-in-alt"></i> Login</a></li>
             </ng-container>
-
-            <!-- Dacă este logat -->
             <ng-container *ngIf="isLoggedIn()">
                 <li class="clickable"><a (click)="goToProfile()"><i class="fas fa-user"></i> Profile</a></li>
                 <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
-                <li><a href="#"><i class="fas fa-question-circle"></i> Help</a></li>
                 <li><a (click)="logout()"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
             </ng-container>
         </ul>
     </mat-drawer>
 
-    <!-- Right drawer for adding an event -->
     <mat-drawer #rightMenu mode="over" position="end" class="sidebar right-sidebar">
         <div class="sidebar-header">
             <h3>Add event</h3>
             <button class="close-btn" (click)="rightMenu.close()">&times;</button>
         </div>
-
         <br>
         <div class="geometry-select">
-            <label for="geometryType">Select type:</label>
-            <select id="geometryType" [(ngModel)]="geometryType" class="custom-select">
+            <label>Select type:</label>
+            <select [(ngModel)]="geometryType" class="custom-select">
                 <option value="Point">Point</option>
                 <option value="Polygon">Polygon</option>
                 <option value="Polyline">Polyline</option>
             </select>
         </div>
-
         <form class="event-form">
-            <label for="title">Title:</label>
-            <input id="title" type="text" [(ngModel)]="eventData.title" name="title" maxlength="40" required />
-
-            <label for="description">Description:</label>
-            <textarea id="description" [(ngModel)]="eventData.description" name="description" maxlength="300" rows="3"
-                required></textarea>
-
-            <label for="start_time">Start Time:</label>
-            <input id="start_time" type="datetime-local" [(ngModel)]="eventData.start_time" name="start_time"
-                required />
-
-            <label for="end_time">End Time:</label>
-            <input id="end_time" type="datetime-local" [(ngModel)]="eventData.end_time" name="end_time" required />
-
-            <label for="color">Color:</label>
-            <input id="color" type="color" [(ngModel)]="eventData.color" name="color" />
+            <label>Title:</label>
+            <input type="text" [(ngModel)]="eventData.title" name="title" required />
+            <label>Description:</label>
+            <textarea [(ngModel)]="eventData.description" name="description" rows="3" required></textarea>
+            <label>Start Time:</label>
+            <input type="datetime-local" [(ngModel)]="eventData.start_time" name="start_time" required />
+            <label>End Time:</label>
+            <input type="datetime-local" [(ngModel)]="eventData.end_time" name="end_time" required />
+            <label>Color:</label>
+            <input type="color" [(ngModel)]="eventData.color" name="color" />
         </form>
-
         <div class="features-container">
             <ul class="sidebar-list">
                 <li *ngFor="let feature of mapFeatures" class="feature-item">
                     <div class="feature-content">
-                        <span>
-                            {{ feature.type }}
-                            <span *ngIf="feature.type === 'Point'">
-                                ({{ feature.graphic.geometry.latitude.toFixed(6) }}, {{
-                                feature.graphic.geometry.longitude.toFixed(6) }})
-                            </span>
-                        </span>
+                        <span>{{ feature.type }}</span>
                         <button class="remove-btn" (click)="removeFeature(feature.id)">x</button>
                     </div>
                 </li>
             </ul>
         </div>
-
         <button class="save-event-btn" (click)="saveEvent()">Save Event</button>
     </mat-drawer>
 
-    <!-- Harta principala -->
+    <mat-drawer #routeMenu mode="over" position="end" class="sidebar right-sidebar">
+        <div class="sidebar-header">
+            <h3>Directions</h3>
+            <button class="close-btn" (click)="closeRouting()">&times;</button>
+        </div>
+
+        <div class="routing-container">
+            <div class="route-input-group" [class.active-input]="activeRoutingField === 'start'">
+                <label><i class="fas fa-circle" style="color: #3498db; font-size: 0.8rem;"></i> Start Point</label>
+                <div class="input-wrapper">
+                    <input type="text" [value]="startPointName" (click)="selectRoutingField('start')" readonly
+                        placeholder="Choose start location..." />
+
+                    <button *ngIf="startPointGraphic" class="icon-btn clear-btn" (click)="clearSinglePoint('start')">
+                        &times;
+                    </button>
+
+                    <button *ngIf="!startPointGraphic" class="icon-btn loc-btn" (click)="setToCurrentLocation('start')"
+                        matTooltip="Use my location">
+                        <i class="fas fa-crosshairs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div style="padding-left: 6px; color: gray;">⋮</div>
+
+            <div class="route-input-group" [class.active-input]="activeRoutingField === 'end'">
+                <label><i class="fas fa-map-marker-alt" style="color: #e74c3c;"></i> Destination</label>
+                <div class="input-wrapper">
+                    <input type="text" [value]="endPointName" (click)="selectRoutingField('end')" readonly
+                        placeholder="Choose destination..." />
+
+                    <button *ngIf="endPointGraphic" class="icon-btn clear-btn" (click)="clearSinglePoint('end')">
+                        &times;
+                    </button>
+
+                    <button *ngIf="!endPointGraphic" class="icon-btn loc-btn" (click)="setToCurrentLocation('end')"
+                        matTooltip="Use my location">
+                        <i class="fas fa-crosshairs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <button class="save-event-btn" style="margin-top: 20px;" (click)="triggerRouteCalculation()">
+                <i class="fas fa-directions"></i> Calculate Route
+            </button>
+
+            <button class="reset-btn" (click)="clearRouter()">Reset All</button>
+        </div>
+
+        <div id="directions-panel" class="directions-list"></div>
+    </mat-drawer>
+
     <div class="map-view" #mapViewNode></div>
 
-    <!-- Search Bar -->
     <div class="search-container">
-        <input type="text" placeholder="Search for an event..." [(ngModel)]="searchQuery" />
+        <input type="text" placeholder="Search location..." [(ngModel)]="searchQuery" />
         <button (click)="searchLocation()">Search</button>
     </div>
 
 </mat-drawer-container>
 
-<!-- Floating Action Button -->
-<button class="fab" (click)="drawer.toggle()" [matTooltip]="drawer.opened ? 'Close menu' : 'Open menu'"
-    matTooltipPosition="right">☰</button>
+<button class="fab" (click)="drawer.toggle()">☰</button>
 
 <div class="fab-container">
-    <button class="fab-right main" (click)="toggleFabMenu()">+</button>
+    <button class="fab-right main" (click)="toggleFabMenu()">
+        <span *ngIf="!fabOpen">+</span>
+        <span *ngIf="fabOpen">-</span>
+    </button>
 
     <button class="fab-option route" *ngIf="fabOpen" (click)="startRoutingMode()" matTooltip="Routing"
         matTooltipPosition="left">

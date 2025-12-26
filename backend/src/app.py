@@ -165,7 +165,24 @@ def get_event_endpoint():
         return jsonify({"error": "Missing event_id parameter"}), 400
     
     return jsonify(get_event(event_id)), 200
+@app.route("/delete_event/<int:event_id>", methods=["DELETE"])
+@login_required
+def delete_event_endpoint(event_id):
+    event = Event.query.get(event_id)
 
+    if not event:
+        return jsonify({"error": "Event not found"}), 404
+
+    if event.owner_id != request.user_id:
+        return jsonify({"error": "Unauthorized. You are not the owner of this event."}), 403
+
+    try:
+        db.session.delete(event)
+        db.session.commit()
+        return jsonify({"message": "Event deleted successfully"}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": f"Error deleting event: {str(e)}"}), 500
 @app.route("/get_participation", methods=["GET"])
 def get_participation_endpoint():
     user_id = request.args.get("user_id", type = int)

@@ -5,7 +5,7 @@
   position: relative;
 }
 
-/* Drawer-ul Material (înlocuiește .sidebar) */
+/* Drawer-ul Material */
 .mat-drawer.sidebar {
   width: 280px;
   background: linear-gradient(180deg, #2c3e50, #34495e);
@@ -68,12 +68,24 @@
   transition: all 0.2s;
 }
 
+.clickable {
+  cursor: pointer;
+}
+
+.sidebar-list a i {
+  margin-right: 10px;
+}
+
+.sidebar-list a:hover {
+  color: #1abc9c;
+  padding-left: 5px;
+}
+
+/* Form Elements */
 .custom-select {
   appearance: none;
-  -webkit-appearance: none;
-  -moz-appearance: none;
   background-color: #ffffff;
-  color: rgb(0, 0, 0);
+  color: black;
   padding: 10px 15px;
   border-radius: 6px;
   border: 1px solid white;
@@ -81,27 +93,46 @@
   cursor: pointer;
   width: 100%;
   outline: none;
-  transition: background 0.3s, box-shadow 0.2s, border 0.2s;
-}
-
-.custom-select::-ms-expand {
-  display: none;
 }
 
 .geometry-select {
   position: relative;
 }
 
-.custom-select:hover {
-  background-color: #dadada;
-  color: #000000;
+.geometry-select::after {
+  content: '▾';
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: black;
+  font-size: 0.8rem;
 }
 
-.custom-select:focus {
-  background-color: #dadada;
-  color: #000000;
+.event-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+
+  input:focus,
+  textarea:focus {
+    outline: none;
+  }
 }
 
+.event-form input,
+.event-form textarea,
+.event-form select {
+  padding: 5px 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Feature List (Add Event) */
 .feature-item {
   background-color: white;
   color: #333;
@@ -110,7 +141,6 @@
   padding: 10px 15px;
   display: flex;
   align-items: center;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
 .feature-content {
@@ -124,8 +154,7 @@
   max-height: 25%;
   overflow-y: auto;
   margin-top: 5px;
-  padding-right: 5px;
-  padding-left: 5px;
+  padding: 5px;
   background: linear-gradient(180deg, #5a7ea1, #5c81a5);
   border-radius: 8px;
 }
@@ -135,46 +164,7 @@
   border: none;
   color: #e74c3c;
   cursor: pointer;
-  font-size: 1rem;
   margin-left: 10px;
-}
-
-.remove-btn:hover {
-  color: #c0392b;
-}
-
-.geometry-select::after {
-  content: '▾';
-  position: absolute;
-  top: 50%;
-  right: 15px;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: white;
-  font-size: 0.8rem;
-}
-
-.event-form {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 15px;
-
-  input:focus,
-  textarea:focus {
-    outline: none;
-    box-shadow: none;
-  }
-}
-
-.event-form input,
-.event-form textarea,
-.event-form select {
-  padding: 5px 8px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  width: 100%;
-  box-sizing: border-box;
 }
 
 .save-event-btn {
@@ -196,86 +186,124 @@
   background: linear-gradient(180deg, #34495e, #2c3e50);
 }
 
-.remove-btn {
-  background: none;
-  border: none;
-  color: #e74c3c;
-  cursor: pointer;
-  margin-left: 10px;
-  font-size: 1rem;
-}
-
-.remove-btn:hover {
-  color: #c0392b;
-}
-
-.clickable {
-  cursor: pointer;
-}
-
-.sidebar-list a i {
-  margin-right: 10px;
-}
-
-.sidebar-list a:hover {
-  color: #1abc9c;
-  padding-left: 5px;
-}
-
-/* Map view */
+/* Map & UI */
 .map-view {
   height: 100%;
   width: 100%;
 }
 
-/* Floating Action Button */
-.fab {
-  position: fixed;
-  bottom: 40px;
-  left: 20px;
-  background-color: #1abc9c;
-  color: white;
+/* --- ROUTING STYLES (NEW) --- */
+.routing-container {
+  padding: 10px 5px;
+}
+
+.route-input-group {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.3s;
+  margin-bottom: 5px;
+}
+
+.route-input-group label {
+  font-size: 0.9rem;
+  color: #bdc3c7;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.route-input-group input {
   border: none;
-  border-radius: 50%;
-  width: 55px;
-  height: 55px;
+  padding: 8px 10px;
+  width: 100%;
+  outline: none;
+  font-size: 0.95rem;
+  color: #2c3e50;
+  cursor: pointer;
+}
+
+/* Buttons inside inputs (X and Target) */
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 10px;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  cursor: pointer;
-  z-index: 1300;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transition: background 0.3s, transform 0.2s;
+  transition: color 0.2s;
 }
 
-.fab-right {
-  position: fixed;
-  bottom: 40px;
-  right: 20px;
-  background-color: #1abc9c;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 55px;
-  height: 55px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 28px;
-  cursor: pointer;
-  z-index: 1300;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  transition: background 0.3s, transform 0.2s;
+.clear-btn {
+  color: #95a5a6;
+  font-size: 1.2rem;
+  font-weight: bold;
 }
 
+.clear-btn:hover {
+  color: #e74c3c;
+}
 
-.fab:hover {
-  background-color: #16a085;
+.loc-btn {
+  color: #3498db;
+  font-size: 1rem;
+}
+
+.loc-btn:hover {
+  color: #2980b9;
   transform: scale(1.1);
 }
 
-/* Search bar */
+.route-input-group.active-input {
+  border-color: #1abc9c;
+  box-shadow: 0 0 8px rgba(26, 188, 156, 0.3);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.reset-btn {
+  background: none;
+  border: 1px solid #95a5a6;
+  color: #ecf0f1;
+  margin-top: 10px;
+  padding: 8px;
+  width: 100%;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.reset-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.directions-list {
+  margin-top: 20px;
+  color: #ecf0f1;
+  max-height: 40vh;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.directions-list ol {
+  padding-left: 20px;
+}
+
+
+/* Search & FABs */
 .search-container {
   position: absolute;
   top: 20px;
@@ -293,7 +321,6 @@
   width: 250px;
   border: none;
   outline: none;
-  font-size: 1rem;
 }
 
 .search-container button {
@@ -303,11 +330,25 @@
   color: white;
   font-weight: bold;
   cursor: pointer;
-  transition: background 0.2s;
 }
 
-.search-container button:hover {
-  background-color: #16a085;
+.fab {
+  position: fixed;
+  bottom: 40px;
+  left: 20px;
+  background-color: #1abc9c;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 55px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  cursor: pointer;
+  z-index: 1300;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .fab-container {
@@ -319,9 +360,7 @@
   z-index: 1300;
 }
 
-
-
-.fab-main {
+.fab-right {
   position: absolute;
   bottom: 0;
   left: 50%;
@@ -335,6 +374,7 @@
   font-size: 28px;
   cursor: pointer;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1301;
 }
 
 .fab-option {
@@ -348,9 +388,12 @@
   color: white;
   cursor: pointer;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
 }
-
-
 
 .fab-option.route {
   bottom: 65px;
