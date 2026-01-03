@@ -36,6 +36,17 @@
                 <mat-label>Birthday</mat-label>
                 <input matInput [value]="user?.birthday | date:'mediumDate'" readonly>
             </mat-form-field>
+            
+            <mat-form-field appearance="fill" class="full-width">
+                <mat-label>Gender</mat-label>
+                <input matInput readonly>
+                <mat-radio-group formControlName="gender">
+                    <mat-radio-button value="M">Male</mat-radio-button>
+                    <mat-radio-button value="F">Female</mat-radio-button>
+                    <mat-radio-button value="N">Not-Specified</mat-radio-button>
+                </mat-radio-group>
+            </mat-form-field>
+
             <button mat-raised-button color="primary" class="save-btn" [disabled]="profileForm.invalid">
                 Save Changes
             </button>
@@ -45,5 +56,9 @@
             <h3>Statistics</h3>
             <p>Events created: 0</p>
         </div>
+
+        <button mat-raised-button color="accent" [routerLink]="['/map']" [queryParams]="{ someParam: 'value' }">
+            Go to Map
+        </button>
     </mat-card>
 </div>

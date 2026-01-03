@@ -30,6 +30,11 @@ class User(db.Model):
     email = db.Column(db.String(50), unique=True, nullable = False)
     password_hash = db.Column(db.String(200), nullable = False)
     birthday = db.Column(db.Date, nullable = False)
+    gender = db.Column(
+        Enum("M", "F", "N", name="user_gender"),
+        nullable = False,
+        default = "N"
+    )
     created_at = db.Column(db.DateTime, default = lambda: datetime.now(timezone.utc), nullable = False)
     profile_picture = db.Column(db.String(200))
     events = db.relationship("Event", back_populates = "owner", cascade = "all, delete-orphan")
@@ -43,6 +48,7 @@ class User(db.Model):
             "email": self.email,
             # "password_hash": self.password_hash,
             "birthday": self.birthday.isoformat(),
+            "gender": self.gender,
             "created_at": self.created_at.isoformat(),
             "profilePicture": self.profile_picture
         }

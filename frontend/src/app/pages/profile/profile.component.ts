@@ -33,7 +33,8 @@ export class ProfileComponent implements OnInit {
     this.profileForm = this.fb.group({
       firstName: ['', Validators.required],
       lastName: ['', Validators.required],
-      email: ['', [Validators.required, Validators.email]]
+      email: ['', [Validators.required, Validators.email]],
+      gender: ['N', Validators.required]
     });
     const loggedIn = this.authService.getUserId();
     //if (loggedIn!=this.userId){
@@ -51,7 +52,8 @@ export class ProfileComponent implements OnInit {
           this.profileForm.patchValue({
             firstName: this.user.firstName,
             lastName: this.user.lastName,
-            email: this.user.email
+            email: this.user.email,
+            gender: this.user.gender || 'N'
           });
         },
         error: (err) => {
@@ -87,7 +89,8 @@ export class ProfileComponent implements OnInit {
       const updatedUser = {
         firstName: this.profileForm.value.firstName,
         lastName: this.profileForm.value.lastName,
-        email: this.profileForm.value.email
+        email: this.profileForm.value.email,
+        gender: this.profileForm.value.gender
       };
 
       this.http.put<any>(`http://127.0.0.1:8081/update_user/${this.userId}`, updatedUser)
@@ -102,5 +105,9 @@ export class ProfileComponent implements OnInit {
           }
         });
     }
+  }
+
+  goToMap() {
+    this.router.navigate(['/map'], { queryParams: { someParam: 'value' } });
   }
 }
