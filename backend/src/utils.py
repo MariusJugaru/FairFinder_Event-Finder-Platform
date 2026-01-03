@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import re
 from enum import Enum
 from models import db
@@ -124,7 +124,64 @@ def create_event(data: dict) -> Event:
 
 def get_all_events() -> list:
     events = Event.query.all()
-    return [event.to_dict() for event in events]
+    result = []
+
+    for event in events:
+        event_dict = event.to_dict()
+
+        counts = {"Going": 0, "Not going": 0, "Interested": 0}
+
+        for participation in event.participations:
+            if participation.status in counts:
+                counts[participation.status] += 1
+
+        ages = []
+        gender_counts = {"M": 0, "F": 0, "N": 0}
+
+        total_participants = 0
+        for participation in event.participations:
+            if participation.status != "Going":
+                continue
+            total_participants = total_participants + 1
+            user = participation.user
+            if isinstance(user.birthday, str):
+                birthday_date = datetime.fromisoformat(user.birthday).date()
+            else:
+                birthday_date = user.birthday
+
+            age = (date.today() - birthday_date).days // 365 
+            ages.append(age)
+
+            if user.gender in gender_counts:
+                gender_counts[user.gender] += 1
+            else:
+                gender_counts["N"] += 1
+
+        if total_participants == 0:
+            age_avg = 0
+            male_perc = 0
+            female_perc = 0
+            non_perc = 0
+        else:
+            age_avg = round(sum(ages)/len(ages), 1) if ages else None
+
+            male_perc = round((gender_counts["M"]/total_participants)*100, 1) if total_participants else 0
+            female_perc = round((gender_counts["F"]/total_participants)*100, 1) if total_participants else 0
+            non_perc = round((gender_counts["N"]/total_participants)*100, 1) if total_participants else 0
+
+        event_dict.update({
+            "going": counts["Going"],
+            "not_going": counts["Not going"],
+            "interested": counts["Interested"],
+            "ageAvg": age_avg,
+            "malePerc": male_perc,
+            "femalePerc": female_perc,
+            "notPerc": non_perc
+        })
+
+        result.append(event_dict)
+
+    return result
 
 def get_event(event_id: int) -> dict:
     """
@@ -134,7 +191,58 @@ def get_event(event_id: int) -> dict:
     event = Event.query.filter_by(id = event_id).first()
     if event is None:
         return {}
-    return event.to_dict()
+    
+    event_dict = event.to_dict()
+    counts = {"Going": 0, "Not going": 0, "Interested": 0}
+    for participation in event.participations:
+            if participation.status in counts:
+                counts[participation.status] += 1
+    ages = []
+    gender_counts = {"M": 0, "F": 0, "N": 0}
+
+    total_participants = 0
+    for participation in event.participations:
+        if participation.status != "Going":
+            continue
+        total_participants = total_participants + 1
+        user = participation.user
+        if isinstance(user.birthday, str):
+            birthday_date = datetime.fromisoformat(user.birthday).date()
+        else:
+            birthday_date = user.birthday
+
+        age = (date.today() - birthday_date).days // 365 
+        ages.append(age)
+
+        if user.gender in gender_counts:
+            gender_counts[user.gender] += 1
+        else:
+            gender_counts["N"] += 1
+
+    if total_participants == 0:
+        age_avg = 0
+        male_perc = 0
+        female_perc = 0
+        non_perc = 0
+    else:
+        age_avg = round(sum(ages)/len(ages), 1) if ages else None
+
+        male_perc = round((gender_counts["M"]/total_participants)*100, 1) if total_participants else 0
+        female_perc = round((gender_counts["F"]/total_participants)*100, 1) if total_participants else 0
+        non_perc = round((gender_counts["N"]/total_participants)*100, 1) if total_participants else 0
+
+
+    event_dict.update({
+        "going": counts["Going"],
+        "not_going": counts["Not going"],
+        "interested": counts["Interested"],
+        "ageAvg": age_avg,
+        "malePerc": male_perc,
+        "femalePerc": female_perc,
+        "notPerc": non_perc
+    })
+
+    return event_dict
 
 def create_participation(data: dict) -> Participation:
     """

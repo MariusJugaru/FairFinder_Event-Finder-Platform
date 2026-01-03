@@ -17,7 +17,7 @@ app = Flask(__name__)
 app.secret_key = "SECRET_KEY"
 
 # DB Config
-ACCESS_TOKEN_EXPIRES_MIN = 15
+ACCESS_TOKEN_EXPIRES_MIN = 60 * 24
 REFRESH_TOKEN_EXPIRES_DAYS = 7
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:admin@localhost:3306/fair-finder-db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -123,24 +123,30 @@ def post_event():
 def get_events():
     return jsonify(get_all_events()), 200
 
-@app.route("/post_participation", methods=["GET", "POST"])
+@app.route("/post_participation", methods=["POST"])
 def post_participation():
-    if request.method == "POST":
-        data = request.get_json()
 
-        status, message = validate_post_request(data, PostFields.participation.value)
-        if not status:
-            return jsonify(message), 400
+    data = request.get_json()
 
-        create_participation(data)
-        return redirect(url_for("home"))
-    else:
-        # TODO: Return TBD.
-        return "TODO"
+    status, message = validate_post_request(data, PostFields.participation.value)
+    if not status:
+        return jsonify(message), 400
+
+    create_participation(data)
+    return jsonify(get_event(data["event_id"])), 200
+
 
 @app.route("/get_participations", methods=["GET"])
 def get_participations():
     return jsonify(get_all_participations()), 200
+
+@app.route("/participation/<int:event_id>/users/<int:user_id>", methods=["GET"])
+def get_participation(event_id, user_id):
+    participation = Participation.query.filter_by(user_id=user_id, event_id=event_id).first()
+
+    if participation is None:
+        return jsonify({"status": None}), 200
+    return jsonify(participation.to_dict()), 200
 
 @app.route("/delete", methods=["GET"])
 def delete():
@@ -219,6 +225,8 @@ def update_user_endpoint(user_id):
             user.birthday = datetime.fromisoformat(data["birthday"]).date()
         except Exception as e:
             return jsonify({"error": "Invalid birthday format"}), 400
+    if "gender" in data:
+        user.gender = data["gender"]
 
     db.session.commit()
     return jsonify(user.to_dict()), 200

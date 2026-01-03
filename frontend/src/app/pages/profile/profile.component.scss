@@ -63,3 +63,9 @@
 .profile-stats h3 {
     margin-bottom: 10px;
 }
+
+.full-width mat-radio-group {
+  display: flex;
+  gap: 16px;
+  margin-top: 4px;
+}

@@ -27,6 +27,8 @@ import Polygon from "@arcgis/core/geometry/Polygon";
 import Polyline from "@arcgis/core/geometry/Polyline";
 import { ToastService } from "src/app/services/toast.service";
 
+import Collection from "@arcgis/core/core/Collection";
+
 // --- SERVICIUL DE EVENIMENTE (Ramas neschimbat) ---
 @Injectable({
   providedIn: 'root'
@@ -55,12 +57,33 @@ export class EventService {
   getAllEvents(): Observable<any[]> {
     return this.http.get<any[]>(`${this.baseUrl}/get_events`);
   }
+
+  getParticipation(eventId: number, userId: number): Observable<Participation> {
+    return this.http.get<Participation>(`${this.baseUrl}/participation/${eventId}/users/${userId}`)
+  }
+
+  postParticipation(payload: { user_id: number, event_id: number, status: string }): Observable<any> {
+    const token = this.authService.getToken();
+    const headers = new HttpHeaders({
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    });
+    
+    return this.http.post(`${this.baseUrl}/post_participation`, payload, { headers });
+  }
 }
 
 export interface MapFeature {
   id: string;
   type: 'Point' | 'Polygon' | 'Polyline';
   graphic: esri.Graphic;
+}
+
+export interface Participation {
+  id?: number;
+  user_id: number;
+  event_id: number;
+  status: "Going" | "Interested" | "Not going";
 }
 
 type AppMode = 'NONE' | 'ADD_EVENT' | 'ROUTING';
@@ -242,6 +265,97 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     });
   }
+  handleEventStatus(status: "Going" | "Interested" | "Not going") {
+    const selectedFeature = this.view.popup.selectedFeature;
+    if (!selectedFeature || !selectedFeature.attributes) {
+      this.toast.showToast("No event selected", "error");
+      return;
+    }
+
+    const eventId = selectedFeature.attributes.id;
+    const userId = this.authService.getUserId();
+    if (!userId) {
+      this.toast.showToast("You must be logged in to set participation!", "warning");
+      return;
+    }
+
+    const payload = {
+      user_id: userId,
+      event_id: eventId,
+      status: status
+    }
+
+    // Send payload to backend
+    this.eventService.postParticipation(payload).subscribe({
+      next: (res) => {
+        this.toast.showToast("Participation set sucessfully!", "success");
+
+        const currentStatus = status;
+        const currentUserId = this.authService.getUserId();
+        const actions: Collection = new Collection();
+
+        selectedFeature.attributes.going = res.going;
+        selectedFeature.attributes.not_going = res.not_going;
+        selectedFeature.attributes.interested = res.interested;
+        
+        selectedFeature.popupTemplate.content = (feature) => {
+          const attr = feature.graphic.attributes;
+          const startDate = new Date(attr.start_time).toLocaleString();
+          const endDate = new Date(attr.end_time).toLocaleString();
+          return `
+            <b>Description:</b> ${attr.description}<br>
+            <b>Start:</b> ${startDate}<br>
+            <b>End:</b> ${endDate}<br>
+            <br><b><u>Statistics</u></b><br>
+            <b>Going:</b> ${attr.going}<br>
+            <b>Not going:</b> ${attr.not_going}<br>
+            <b>Interested:</b> ${attr.interested}<br>
+            <br>
+            <b>Age Average:</b> ${res.ageAvg}<br>
+            <br>
+            <b><u>Gender distribution</u></b><br>
+            Male: ${res.malePerc}%<br>
+            Female: ${res.femalePerc}%<br>
+            Not-Specified: ${res.notPerc}%<br>
+          `;
+        };
+
+        actions.push({
+          title: "Navigate to",
+          id: "navigate-to-event",
+          className: "esri-icon-directions",
+          type: "button"
+        });
+
+        // Delete dacă e owner
+        if (selectedFeature.attributes.owner_id === currentUserId) {
+          actions.push({
+            title: "Delete Event",
+            id: "delete-event",
+            className: "esri-icon-trash",
+            type: "button"
+          });
+        }
+
+        // Status buttons
+        if (currentStatus !== "Going") actions.push({ title: "Going", id: "event-going", className: "esri-icon-check-mark", type: "button" });
+        if (currentStatus !== "Not going") actions.push({ title: "Not going", id: "event-not_going", className: "esri-icon-check-mark", type: "button" });
+        if (currentStatus !== "Interested") actions.push({ title: "Interested", id: "event-interested", className: "esri-icon-check-mark", type: "button" });
+
+        selectedFeature.popupTemplate.actions = actions;
+        this.view.popup.reposition();
+        this.view.popup.open({
+          features: [selectedFeature]
+        });
+        
+      },
+      error: (err) => {
+        console.error("Error updating participation!", err);
+        this.toast.showToast("Could not update participation", "error");
+      }
+    });
+
+  }
   setupEventHandlers() {
     // 1. CLICK PE HARTĂ (General)
     this.view.on("click", (event) => {
@@ -266,9 +380,14 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
         // Verificăm ID-ul acțiunii
         if (event.action.id === "navigate-to-event") {
           this.handleNavigateToEvent();
-        }
-        if (event.action.id === "delete-event") {
+        } else if (event.action.id === "delete-event") {
           this.handleDeleteEvent();
+        } else if (event.action.id === "event-going") {
+          this.handleEventStatus("Going");
+        } else if (event.action.id === "event-not_going") {
+          this.handleEventStatus("Not going");
+        } else if (event.action.id === "event-interested") {
+          this.handleEventStatus("Interested");
         }
       }
     );
@@ -638,63 +757,170 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
           const geom = event.geometry;
           const startDate = new Date(event.start_time).toLocaleString();
           const endDate = new Date(event.end_time).toLocaleString();
-          const actions: any[] = [];
+          
           const navigateAction = {
             title: "Navighează aici",
             id: "navigate-to-event",
             className: "esri-icon-directions",
             type: "button" as "button"
           };
-          actions.push({
-            title: "Navigate to",
-            id: "navigate-to-event",
-            className: "esri-icon-directions",
-            type: "button" as "button"
-          });
+          
           const currentUserId = this.authService.getUserId();
-          if (event.owner_id && event.owner_id === currentUserId) {
+
+          if (currentUserId == null) {
+            const actions: any[] = [];
+
             actions.push({
-              title: "Delete Event",
-              id: "delete-event",
-              className: "esri-icon-trash",
+              title: "Navigate to",
+              id: "navigate-to-event",
+              className: "esri-icon-directions",
               type: "button" as "button"
             });
+            if (event.owner_id && event.owner_id === currentUserId) {
+              actions.push({
+                title: "Delete Event",
+                id: "delete-event",
+                className: "esri-icon-trash",
+                type: "button" as "button"
+              });
+            }
+
+            const popupTemplate = {
+              title: event.title,
+              content: `
+              <b>Description:</b> ${event.description}<br>
+              <b>Start:</b> ${startDate}<br>
+              <b>End:</b> ${endDate}<br>
+              `,
+              actions: actions
+            };
+
+            const color = event.color ? this.hexToRgbArray(event.color) : [226, 119, 40];
+
+            if (geom.type === 'Point') {
+              const point = new Point({ longitude: geom.coordinates[0], latitude: geom.coordinates[1] });
+              graphic = new Graphic({
+                geometry: point,
+                symbol: new SimpleMarkerSymbol({ color: color, outline: { color: [255, 255, 255], width: 1 } }),
+                attributes: event,
+                popupTemplate: popupTemplate
+              });
+            } else if (geom.type === 'Polygon') {
+              const polygon = new Polygon({ rings: geom.coordinates });
+              graphic = new Graphic({
+                geometry: polygon,
+                symbol: new SimpleFillSymbol({ color: [...color, 0.5], outline: new SimpleLineSymbol({ color: [255, 255, 255], width: 1 }) }),
+                attributes: event,
+                popupTemplate: popupTemplate
+              });
+            } else { // Polyline / LineString
+              const polyline = new Polyline({ paths: geom.coordinates });
+              graphic = new Graphic({
+                geometry: polyline,
+                symbol: new SimpleLineSymbol({ color: color, width: 2 }),
+                attributes: event,
+                popupTemplate: popupTemplate
+              });
+            }
+
+            if (graphic) this.graphicsLayerEvents.add(graphic);
+            return;
           }
-          const popupTemplate = {
-            title: event.title,
-            content: `<b>Descriere:</b> ${event.description}<br><b>Start:</b> ${startDate}<br><b>End:</b> ${endDate}`,
-            actions: actions
-          };
 
-          const color = event.color ? this.hexToRgbArray(event.color) : [226, 119, 40];
+          this.eventService.getParticipation(event.id, currentUserId).subscribe(res => {
+            const actions: any[] = [];
 
-          if (geom.type === 'Point') {
-            const point = new Point({ longitude: geom.coordinates[0], latitude: geom.coordinates[1] });
-            graphic = new Graphic({
-              geometry: point,
-              symbol: new SimpleMarkerSymbol({ color: color, outline: { color: [255, 255, 255], width: 1 } }),
-              attributes: event,
-              popupTemplate: popupTemplate
+            actions.push({
+              title: "Navigate to",
+              id: "navigate-to-event",
+              className: "esri-icon-directions",
+              type: "button" as "button"
             });
-          } else if (geom.type === 'Polygon') {
-            const polygon = new Polygon({ rings: geom.coordinates });
-            graphic = new Graphic({
-              geometry: polygon,
-              symbol: new SimpleFillSymbol({ color: [...color, 0.5], outline: new SimpleLineSymbol({ color: [255, 255, 255], width: 1 }) }),
-              attributes: event,
-              popupTemplate: popupTemplate
-            });
-          } else { // Polyline / LineString
-            const polyline = new Polyline({ paths: geom.coordinates });
-            graphic = new Graphic({
-              geometry: polyline,
-              symbol: new SimpleLineSymbol({ color: color, width: 2 }),
-              attributes: event,
-              popupTemplate: popupTemplate
-            });
-          }
+            if (event.owner_id && event.owner_id === currentUserId) {
+              actions.push({
+                title: "Delete Event",
+                id: "delete-event",
+                className: "esri-icon-trash",
+                type: "button" as "button"
+              });
+            }
+            
+            if (res.status !== "Going") {
+              actions.push({
+                title: "Going",
+                id: "event-going",
+                className: "esri-icon-check-mark",
+                type: "button" as "button"
+              });
+            }
+            if (res.status !== "Not going") {
+              actions.push({
+                title: "Not going",
+                id: "event-not_going",
+                className: "esri-icon-check-mark",
+                type: "button" as "button"
+              });
+            }
+            if (res.status !== "Interested") {
+              actions.push({
+                title: "Interested",
+                id: "event-interested",
+                className: "esri-icon-check-mark",
+                type: "button" as "button"
+              });
+            }
 
-          if (graphic) this.graphicsLayerEvents.add(graphic);
+            const popupTemplate = {
+              title: event.title,
+              content: `
+              <b>Description:</b> ${event.description}<br>
+              <b>Start:</b> ${startDate}<br>
+              <b>End:</b> ${endDate}<br>
+              <br><b><u>Statistics</u></b><br>
+              <b>Going:</b> ${event.going}<br>
+              <b>Not going:</b> ${event.not_going}<br>
+              <b>Interested:</b> ${event.interested}<br>
+              <br>
+              <b>Age Average:</b> ${event.ageAvg}<br>
+              <br>
+              <b><u>Gender distribution</u></b><br>
+              Male: ${event.malePerc}%<br>
+              Female: ${event.femalePerc}%<br>
+              Not-Specified: ${event.notPerc}%<br>
+              `,
+              actions: actions
+            };
+
+            const color = event.color ? this.hexToRgbArray(event.color) : [226, 119, 40];
+
+            if (geom.type === 'Point') {
+              const point = new Point({ longitude: geom.coordinates[0], latitude: geom.coordinates[1] });
+              graphic = new Graphic({
+                geometry: point,
+                symbol: new SimpleMarkerSymbol({ color: color, outline: { color: [255, 255, 255], width: 1 } }),
+                attributes: event,
+                popupTemplate: popupTemplate
+              });
+            } else if (geom.type === 'Polygon') {
+              const polygon = new Polygon({ rings: geom.coordinates });
+              graphic = new Graphic({
+                geometry: polygon,
+                symbol: new SimpleFillSymbol({ color: [...color, 0.5], outline: new SimpleLineSymbol({ color: [255, 255, 255], width: 1 }) }),
+                attributes: event,
+                popupTemplate: popupTemplate
+              });
+            } else { // Polyline / LineString
+              const polyline = new Polyline({ paths: geom.coordinates });
+              graphic = new Graphic({
+                geometry: polyline,
+                symbol: new SimpleLineSymbol({ color: color, width: 2 }),
+                attributes: event,
+                popupTemplate: popupTemplate
+              });
+            }
+
+            if (graphic) this.graphicsLayerEvents.add(graphic);
+          });
         });
       },
       error: (err) => console.error("Error loading events:", err)
