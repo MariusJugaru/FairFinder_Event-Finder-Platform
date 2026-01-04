@@ -15,7 +15,7 @@ import FeatureSet from "@arcgis/core/rest/support/FeatureSet";
 import RouteParameters from "@arcgis/core/rest/support/RouteParameters";
 import * as route from "@arcgis/core/rest/route.js";
 import { Router } from '@angular/router';
-
+import * as locator from "@arcgis/core/rest/locator";
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -68,7 +68,7 @@ export class EventService {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     });
-    
+
     return this.http.post(`${this.baseUrl}/post_participation`, payload, { headers });
   }
 }
@@ -115,10 +115,11 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   graphicsLayerRoutes: esri.GraphicsLayer;      // Rute
   graphicsLayerEvents: GraphicsLayer;           // Evenimente incarcate din DB
   trailheadsLayer: esri.FeatureLayer;
-
+  allEventsList: any[] = [];
+  filteredEvents: any[] = [];
   zoom = 10;
   center: Array<number> = [-118.73682450024377, 34.07817583063242];
-  basemap = "streets-vector";
+  basemap = "arcgis-navigation";
 
   // --- Variabile pentru ADD EVENT ---
   tempPoints: esri.Graphic[] = []
@@ -169,7 +170,6 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       this.resetEventForm();
     });
 
-    // Cleanup Routing când se închide meniul de rutare
     if (this.routeMenu) {
       this.routeMenu.closedStart.subscribe(() => {
         if (this.appMode === 'ROUTING') {
@@ -217,51 +217,45 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
 
       // Centrare initiala
       this.setUserLocation();
-
+      this.view.ui.remove("attribution");
     } catch (error) {
       console.error("Critical Error loading the map: ", error);
       this.toast.showToast("Map initialized with warnings (check console)", "warning");
     }
   }
   handleDeleteEvent() {
-    // 1. Obținem elementul selectat în popup
+    //  Obtinem elementul selectat in popup
     const selectedFeature = this.view.popup.selectedFeature;
 
     if (!selectedFeature || !selectedFeature.attributes) {
       return;
     }
 
-    // 2. Extragem ID-ul și Titlul (pentru confirmare)
-    // Asigură-te că backend-ul trimite 'id' sau '_id' și că e salvat în atribute
+    //  Extragem ID-ul si Titlul
     const eventId = selectedFeature.attributes.id || selectedFeature.attributes._id;
     const eventTitle = selectedFeature.attributes.title;
 
     if (!eventId) {
-      this.toast.showToast("Eroare: Nu s-a găsit ID-ul evenimentului.", "error");
+      this.toast.showToast("Error: Event ID was not found.", "error");
       return;
     }
 
-    // 3. Confirmare (opțional, dar recomandat)
-    if (!confirm(`Ești sigur că vrei să ștergi evenimentul "${eventTitle}"?`)) {
+    if (!confirm(`Do you want to delete event "${eventTitle}"?`)) {
       return;
     }
 
-    // 4. APELUL CĂTRE SERVICE (Aici e partea cu SUBSCRIBE, exact ca la saveEvent)
+    // 4. Apel catre service
     this.eventService.deleteEvent(eventId).subscribe({
       next: (res) => {
-        // SUCCESS: Ce facem după ce s-a șters
-        this.toast.showToast('Eveniment șters cu succes!', 'success');
+        this.toast.showToast('Event deleted succesfully!', 'success');
 
-        // Închidem popup-ul
         this.view.popup.close();
 
-        // Reîncărcăm harta ca să dispară markerul șters
         this.loadEventsOnMap();
       },
       error: (err) => {
-        // ERROR: Ce facem dacă nu merge
-        console.error('Eroare la ștergere:', err);
-        this.toast.showToast('Nu s-a putut șterge evenimentul.', 'error');
+        console.error('Eroare la stergere:', err);
+        this.toast.showToast('Event could not be deleted.', 'error');
       }
     });
   }
@@ -297,7 +291,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
         selectedFeature.attributes.going = res.going;
         selectedFeature.attributes.not_going = res.not_going;
         selectedFeature.attributes.interested = res.interested;
-        
+
         selectedFeature.popupTemplate.content = (feature) => {
           const attr = feature.graphic.attributes;
           const startDate = new Date(attr.start_time).toLocaleString();
@@ -347,7 +341,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
         this.view.popup.open({
           features: [selectedFeature]
         });
-        
+
       },
       error: (err) => {
         console.error("Error updating participation!", err);
@@ -750,6 +744,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
     this.eventService.getAllEvents().subscribe({
       next: (events) => {
         // Curata layer-ul inainte de reload
+        this.allEventsList = events;
         this.graphicsLayerEvents.removeAll();
 
         events.forEach(event => {
@@ -757,14 +752,14 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
           const geom = event.geometry;
           const startDate = new Date(event.start_time).toLocaleString();
           const endDate = new Date(event.end_time).toLocaleString();
-          
+
           const navigateAction = {
             title: "Navighează aici",
             id: "navigate-to-event",
             className: "esri-icon-directions",
             type: "button" as "button"
           };
-          
+
           const currentUserId = this.authService.getUserId();
 
           if (currentUserId == null) {
@@ -844,7 +839,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
                 type: "button" as "button"
               });
             }
-            
+
             if (res.status !== "Going") {
               actions.push({
                 title: "Going",
@@ -926,13 +921,53 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       error: (err) => console.error("Error loading events:", err)
     });
   }
+  onSearchChange(query: string) {
+    this.searchQuery = query; // Actualizam variabila
 
+    if (!query || query.length === 0) {
+      this.filteredEvents = [];
+      return;
+    }
+
+    // Filtram evenimentele care contin textul (case insensitive)
+    this.filteredEvents = this.allEventsList.filter(e =>
+      e.title.toLowerCase().includes(query.toLowerCase())
+    );
+  }
+
+  //  Se apeleaza cand se da click pe un rezultat
+  selectSearchedEvent(eventData: any) {
+    // 1. Curatam cautarea
+    this.filteredEvents = [];
+    this.searchQuery = eventData.title;
+
+    // 2. Cautam graficul corespunzator in layer-ul hartii
+    const graphic = this.graphicsLayerEvents.graphics.find((g) => {
+      return g.attributes && (g.attributes.id === eventData.id || g.attributes._id === eventData.id);
+    });
+
+    if (graphic) {
+      // 3. Zoom la eveniment
+      this.view.goTo({
+        target: graphic,
+        zoom: 15
+      });
+
+      // 4. Deschidem popup-ul automat
+      this.view.popup.open({
+        features: [graphic],
+        location: graphic.geometry
+      });
+    } else {
+      this.toast.showToast("Evenimentul nu a fost găsit pe hartă.", "warning");
+    }
+  }
   // --- GENERAL UI & AUTH ---
   handleNavigateToEvent() {
     const selectedFeature = this.view.popup.selectedFeature;
     if (!selectedFeature) return;
 
-    // Calculăm centrul
+    // Calculam centrul
     let centerPoint: __esri.Point;
     if (selectedFeature.geometry.type === 'point') {
       centerPoint = selectedFeature.geometry as __esri.Point;
@@ -940,22 +975,22 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       centerPoint = selectedFeature.geometry.extent.center;
     }
 
-    // Obținem titlul
+    // Obtinem titlul
     const destName = selectedFeature.attributes?.title || "Event Location";
 
-    // IMPORTANT: Închidem popup-ul
+    // inchidem popup-ul
     this.view.popup.close();
 
-    // IMPORTANT: Activăm modul RUTARE (asta deschide meniul și setează appMode='ROUTING')
+    // Activam modul RUTARE 
     this.startRoutingMode();
 
-    // Forțăm field-ul activ pe 'end' pentru a seta destinația
+    // Fortam field-ul activ pe 'end' pentru a seta destinatia
     this.activeRoutingField = 'end';
 
-    // Setăm punctul pe hartă
+    // Setam punctul pe harta
     this.updateRoutingPoint('end', centerPoint.latitude, centerPoint.longitude, destName);
 
-    // Setăm automat startul la locația curentă
+    // Setam automat startul la locatia curenta
     setTimeout(() => {
       this.setToCurrentLocation('start');
     }, 100);
@@ -988,11 +1023,67 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
     this.drawer.close();
   }
 
-  searchLocation() {
+  async searchLocation() {
     if (!this.searchQuery) return;
-    // Mock search - doar centreaza pe LA pentru demo, poti conecta la locatorTask daca vrei
-    console.log("Cautare: ", this.searchQuery);
-    this.view.goTo({ center: [-118.7, 34.08], zoom: 14 });
+
+    const query = this.searchQuery.toLowerCase().trim();
+
+    // incercam o potrivire exacta
+    let foundEvent = this.allEventsList.find(e =>
+      e.title.toLowerCase() === query
+    );
+
+    // incercam o potrivire partiala (primul care contine textul)
+    if (!foundEvent) {
+      foundEvent = this.allEventsList.find(e =>
+        e.title.toLowerCase().includes(query)
+      );
+    }
+
+    // Daca am găsit un eveniment (exact sau partial), mergem la el
+    if (foundEvent) {
+      this.selectSearchedEvent(foundEvent);
+      this.filteredEvents = []; // Ascundem lista de sugestii dupa selectare
+      return;
+    }
+
+    // PASUL 2: Geocoding (Daca nu e niciun eveniment)
+    const geocodingUrl = "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer";
+
+    try {
+      const results = await locator.addressToLocations(geocodingUrl, {
+        address: {
+          "SingleLine": this.searchQuery
+        },
+        maxLocations: 1,
+        outFields: ["*"]
+      });
+
+      if (results.length > 0) {
+        const result = results[0];
+        const location = result.location;
+
+        this.view.goTo({
+          target: location,
+          zoom: 12
+        });
+
+        this.view.popup.open({
+          title: result.address,
+          location: location,
+          content: "Address found"
+        });
+
+        this.filteredEvents = [];
+
+      } else {
+        this.toast.showToast("No event or address found.", "warning");
+      }
+
+    } catch (error) {
+      console.error("Eroare la geocoding:", error);
+      this.toast.showToast("Error when searching for address.", "error");
+    }
   }
 
   setUserLocation() {
@@ -1003,35 +1094,33 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
           const lat = position.coords.latitude;
           this.center = [lon, lat];
 
-          // 1. Centrează harta (comportament existent)
+          // 1. Centrează harta
           this.view.goTo({ center: this.center, zoom: 14 });
 
-          // 2. Creare/Actualizare Marker Locație (MODIFICAT)
           const point = new Point({ longitude: lon, latitude: lat });
 
-          // Stil "GPS" (Punct albastru cu margine albă)
           const symbol = {
             type: "simple-marker",
             style: "circle",
-            color: [66, 133, 244], // Albastru Google
+            color: [66, 133, 244],
             size: "14px",
             outline: {
-              color: [255, 255, 255], // Margine albă
+              color: [255, 255, 255], // Margine alba
               width: 2
             }
           };
 
-          // Dacă markerul există deja, îi actualizăm doar geometria
+          // Daca markerul exista deja, ii actualizăm doar geometria
           if (this.userLocationGraphic) {
             this.userLocationGraphic.geometry = point;
           } else {
-            // Dacă nu există, îl creăm și îl adăugăm pe layer-ul general
+            // Daca nu exista, il cream si il adaugam pe layer-ul general
             this.userLocationGraphic = new Graphic({
               geometry: point,
               symbol: symbol,
               popupTemplate: {
-                title: "Locația ta",
-                content: "Te afli aici."
+                title: "Your location",
+                content: "You are here."
               }
             });
             this.graphicsLayer.add(this.userLocationGraphic);
@@ -1039,11 +1128,11 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
         },
         (error) => {
           console.error("Geolocalizare esuata: ", error);
-          this.toast.showToast("Nu s-a putut obține locația curentă.", "warning");
+          this.toast.showToast("Current location could not be found.", "warning");
         }
       );
     } else {
-      this.toast.showToast("Browserul nu suportă geolocalizarea.", "error");
+      this.toast.showToast("Browser does not support geolocalization.", "error");
     }
   }
 

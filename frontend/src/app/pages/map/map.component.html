@@ -113,8 +113,25 @@
     <div class="map-view" #mapViewNode></div>
 
     <div class="search-container">
-        <input type="text" placeholder="Search location..." [(ngModel)]="searchQuery" />
-        <button (click)="searchLocation()">Search</button>
+        <div class="search-box">
+            <input type="text" placeholder="Search events or places..." [(ngModel)]="searchQuery"
+                (ngModelChange)="onSearchChange($event)" (keyup.enter)="searchLocation()" />
+            <button (click)="searchLocation()">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+
+        <ul class="search-suggestions" *ngIf="filteredEvents.length > 0">
+            <li *ngFor="let evt of filteredEvents" (click)="selectSearchedEvent(evt)">
+                <div class="suggestion-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+                <div class="suggestion-info">
+                    <span class="suggestion-title">{{ evt.title }}</span>
+                    <small class="suggestion-desc">{{ evt.description | slice:0:30 }}...</small>
+                </div>
+            </li>
+        </ul>
     </div>
 
 </mat-drawer-container>

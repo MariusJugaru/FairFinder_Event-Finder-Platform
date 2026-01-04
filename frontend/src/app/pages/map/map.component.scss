@@ -328,33 +328,121 @@
 
 
 /* Search & FABs */
+/* Search & Suggestions */
 .search-container {
   position: absolute;
   top: 20px;
   left: 50%;
   transform: translateX(-50%);
-  display: flex;
   z-index: 1100;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  border-radius: 6px;
+  width: 360px;
+  /* Lățime fixă, stil Google */
+  display: flex;
+  flex-direction: column;
+  font-family: 'Roboto', sans-serif;
+}
+
+.search-box {
+  display: flex;
+  background: white;
+  border-radius: 8px;
+  /* Colțuri rotunjite */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  /* Umbră fină */
   overflow: hidden;
+  height: 48px;
+  align-items: center;
 }
 
 .search-container input {
-  padding: 10px 12px;
-  width: 250px;
+  flex: 1;
+  padding: 0 15px;
   border: none;
   outline: none;
+  font-size: 1rem;
+  height: 100%;
+  color: #333;
 }
 
 .search-container button {
   padding: 0 20px;
   border: none;
-  background-color: #1abc9c;
-  color: white;
-  font-weight: bold;
+  background-color: transparent;
+  /* Transparent, stil Google */
+  color: #5f6368;
   cursor: pointer;
+  font-size: 1.1rem;
+  border-left: 1px solid #eee;
+  height: 60%;
+  transition: color 0.2s;
 }
+
+.search-container button:hover {
+  color: #1abc9c;
+}
+
+/* Stiluri pentru lista de sugestii (Dropdown) */
+.search-suggestions {
+  list-style: none;
+  padding: 0;
+  margin: 5px 0 0 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  max-height: 300px;
+  overflow-y: auto;
+  width: 100%;
+}
+
+.search-suggestions li {
+  padding: 12px 15px;
+  border-bottom: 1px solid #f1f1f1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s;
+}
+
+.search-suggestions li:last-child {
+  border-bottom: none;
+}
+
+.search-suggestions li:hover {
+  background-color: #f8f9fa;
+  /* Gri deschis la hover */
+}
+
+.suggestion-icon {
+  margin-right: 15px;
+  color: #1abc9c;
+  font-size: 1.2rem;
+}
+
+.suggestion-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.suggestion-title {
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.suggestion-desc {
+  color: #7f8c8d;
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+
+// .search-container button {
+//   padding: 0 20px;
+//   border: none;
+//   background-color: #1abc9c;
+//   color: white;
+//   font-weight: bold;
+//   cursor: pointer;
+// }
 
 .fab {
   position: fixed;
