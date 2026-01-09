@@ -516,3 +516,298 @@
   bottom: 125px;
   background-color: #9b59b6;
 }
+
+/* STATS MODAL STYLES */
+.stats-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  /* Fundal intunecat semi-transparent */
+  z-index: 2000;
+  /* Peste tot (harta, sidebar) */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(4px);
+  /* Efect modern de blur */
+}
+
+.stats-modal {
+  background: white;
+  width: 90%;
+  max-width: 700px;
+  /* Sa nu fie prea lat pe ecrane mari */
+  border-radius: 12px;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+  font-family: 'Roboto', sans-serif;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Header */
+.stats-header {
+  background: linear-gradient(135deg, #1abc9c, #16a085);
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.stats-header h2 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.close-stats-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* Tabs */
+.stats-tabs {
+  display: flex;
+  border-bottom: 1px solid #eee;
+  background: #f8f9fa;
+}
+
+.stats-tabs button {
+  flex: 1;
+  padding: 15px;
+  border: none;
+  background: none;
+  font-size: 1rem;
+  color: #7f8c8d;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+}
+
+.stats-tabs button.active {
+  color: #2c3e50;
+  font-weight: bold;
+  border-bottom: 3px solid #1abc9c;
+  background: white;
+}
+
+.stats-tabs button i {
+  margin-right: 8px;
+}
+
+/* Content */
+.stats-content {
+  padding: 25px;
+  min-height: 300px;
+  /* Inaltime minima pt grafice */
+}
+
+.charts-grid {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.chart-card {
+  flex: 1;
+  text-align: center;
+}
+
+.chart-card h4 {
+  margin-bottom: 15px;
+  color: #34495e;
+}
+
+/* Progress Bar (Age) */
+.stat-row h4 {
+  margin-bottom: 10px;
+  color: #34495e;
+}
+
+.progress-bar-container {
+  background: #ecf0f1;
+  border-radius: 20px;
+  height: 30px;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-track {
+  width: 100%;
+  height: 100%;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #f1c40f, #e67e22);
+  border-radius: 20px;
+}
+
+.progress-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-weight: bold;
+  color: #2c3e50;
+  z-index: 2;
+}
+
+/* Time & Space Cards */
+.info-cards-grid {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.info-card {
+  flex: 1;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eee;
+}
+
+.info-card .icon {
+  font-size: 2rem;
+  margin-right: 15px;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.info-card.blue .icon {
+  background: #e8f4fd;
+  color: #3498db;
+}
+
+.info-card.green .icon {
+  background: #e8f8f5;
+  color: #2ecc71;
+}
+
+.info-card .data {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-card .value {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.info-card .label {
+  color: #95a5a6;
+  font-size: 0.9rem;
+}
+
+.context-box {
+  background: #fff8e1;
+  border-left: 4px solid #f1c40f;
+  padding: 15px;
+  border-radius: 4px;
+}
+
+.context-box h4 {
+  margin: 0 0 10px 0;
+  color: #d35400;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  .charts-grid {
+    flex-direction: column;
+  }
+
+  .info-cards-grid {
+    flex-direction: column;
+  }
+}
+
+.age-bars-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.age-bar-row {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.age-label {
+  width: 50px;
+  font-weight: 600;
+  color: #555;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.age-track {
+  flex-grow: 1;
+  height: 10px;
+  background-color: #f0f2f5;
+  border-radius: 10px;
+  margin: 0 12px;
+  overflow: hidden;
+}
+
+.age-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3498db, #5dade2);
+  border-radius: 10px;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.age-value {
+  width: 85px;
+  text-align: right;
+  color: #2c3e50;
+  flex-shrink: 0;
+
+  strong {
+    font-size: 0.95rem;
+  }
+
+  .text-muted {
+    color: #95a5a6;
+    font-size: 0.8rem;
+    margin-left: 5px;
+  }
+}
+
+.avg-age-footer {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 10px;
+  border-top: 1px solid #f0f2f5;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}

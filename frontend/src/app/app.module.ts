@@ -29,7 +29,7 @@ import { HTTP_INTERCEPTORS } from '@angular/common/http';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
 import { ToastComponent } from './pages/toast/toast.component';
 import { MatRadioModule } from '@angular/material/radio';
-
+import { NgChartsModule } from 'ng2-charts';
 @NgModule({
   declarations: [
     AppComponent,
@@ -49,7 +49,7 @@ import { MatRadioModule } from '@angular/material/radio';
     MatSidenavModule,
     ReactiveFormsModule,      // pentru formGroup
     HttpClientModule,
-    // Angular Material Modules
+    NgChartsModule,
     MatTabsModule,
     MatIconModule,
     MatTooltipModule,

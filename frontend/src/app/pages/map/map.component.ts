@@ -26,7 +26,8 @@ import SimpleLineSymbol from "@arcgis/core/symbols/SimpleLineSymbol";
 import Polygon from "@arcgis/core/geometry/Polygon";
 import Polyline from "@arcgis/core/geometry/Polyline";
 import { ToastService } from "src/app/services/toast.service";
-
+import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
+import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import Collection from "@arcgis/core/core/Collection";
 
 // --- SERVICIUL DE EVENIMENTE (Ramas neschimbat) ---
@@ -120,7 +121,27 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   zoom = 10;
   center: Array<number> = [-118.73682450024377, 34.07817583063242];
   basemap = "arcgis-navigation";
+  // === VARIABILE NOI PENTRU MODAL SI STATISTICI ===
+  showStatsModal = false;
+  activeTab: 'demographics' | 'time-space' = 'demographics';
+  // Date calculate
+  selectedEventStats = {
+    title: '',
+    durationHours: 0,
+    areaSize: 'N/A', // Pt poligoane
+    ageAvg: 0,
+    insights: [] as string[],
+    ageGroups: [] as { label: string, count: number, percent: number }[]
+  };
 
+  // Configuratii Grafice (Stil)
+  pieOptions: ChartConfiguration['options'] = {
+    responsive: true,
+    plugins: { legend: { position: 'bottom' } }
+  };
+  // Datele pentru grafice
+  participationChartData: ChartData<'pie'> = { labels: [], datasets: [] };
+  genderChartData: ChartData<'doughnut'> = { labels: [], datasets: [] };
   // --- Variabile pentru ADD EVENT ---
   tempPoints: esri.Graphic[] = []
   geometryType: 'Point' | 'Polygon' | 'Polyline' = 'Point';
@@ -282,38 +303,39 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
     // Send payload to backend
     this.eventService.postParticipation(payload).subscribe({
       next: (res) => {
-        this.toast.showToast("Participation set sucessfully!", "success");
+        this.toast.showToast("Participation set successfully!", "success");
 
         const currentStatus = status;
         const currentUserId = this.authService.getUserId();
         const actions: Collection = new Collection();
 
+        // Actualizam atributele graficului pentru graficele din Modal
         selectedFeature.attributes.going = res.going;
         selectedFeature.attributes.not_going = res.not_going;
         selectedFeature.attributes.interested = res.interested;
 
+        // De asemenea actualizam procentele pentru demografie
+        selectedFeature.attributes.ageAvg = res.ageAvg;
+        selectedFeature.attributes.malePerc = res.malePerc;
+        selectedFeature.attributes.femalePerc = res.femalePerc;
+        selectedFeature.attributes.notPerc = res.notPerc;
+        selectedFeature.attributes.age_distribution = res.age_distribution;
         selectedFeature.popupTemplate.content = (feature) => {
           const attr = feature.graphic.attributes;
           const startDate = new Date(attr.start_time).toLocaleString();
           const endDate = new Date(attr.end_time).toLocaleString();
           return `
-            <b>Description:</b> ${attr.description}<br>
-            <b>Start:</b> ${startDate}<br>
-            <b>End:</b> ${endDate}<br>
-            <br><b><u>Statistics</u></b><br>
-            <b>Going:</b> ${attr.going}<br>
-            <b>Not going:</b> ${attr.not_going}<br>
-            <b>Interested:</b> ${attr.interested}<br>
-            <br>
-            <b>Age Average:</b> ${res.ageAvg}<br>
-            <br>
-            <b><u>Gender distribution</u></b><br>
-            Male: ${res.malePerc}%<br>
-            Female: ${res.femalePerc}%<br>
-            Not-Specified: ${res.notPerc}%<br>
-          `;
+        <div style="font-family: sans-serif; color: #555;">
+          <b>Description:</b> ${attr.description}<br>
+          <div style="margin-top: 8px; font-size: 0.9em; color: #777;">
+            <i class="far fa-clock"></i> ${startDate} <br> 
+            <i class="fas fa-arrow-right"></i> ${endDate}
+          </div>
+        </div>
+      `;
         };
 
+        // Refacem butoanele
         actions.push({
           title: "Navigate to",
           id: "navigate-to-event",
@@ -321,7 +343,15 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
           type: "button"
         });
 
-        // Delete dacă e owner
+        // adaugam butonul view stats
+        actions.push({
+          title: "View Stats",
+          id: "view-stats",
+          className: "esri-icon-chart",
+          type: "button"
+        });
+
+        // Delete daca e owner
         if (selectedFeature.attributes.owner_id === currentUserId) {
           actions.push({
             title: "Delete Event",
@@ -331,13 +361,14 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
           });
         }
 
-        // Status buttons
+        // Status buttons (le excludem pe cel curent)
         if (currentStatus !== "Going") actions.push({ title: "Going", id: "event-going", className: "esri-icon-check-mark", type: "button" });
         if (currentStatus !== "Not going") actions.push({ title: "Not going", id: "event-not_going", className: "esri-icon-check-mark", type: "button" });
         if (currentStatus !== "Interested") actions.push({ title: "Interested", id: "event-interested", className: "esri-icon-check-mark", type: "button" });
 
         selectedFeature.popupTemplate.actions = actions;
-        this.view.popup.reposition();
+
+        this.view.popup.close();
         this.view.popup.open({
           features: [selectedFeature]
         });
@@ -351,7 +382,6 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
 
   }
   setupEventHandlers() {
-    // 1. CLICK PE HARTĂ (General)
     this.view.on("click", (event) => {
       const point = this.view.toMap(event);
       if (!point) return;
@@ -366,7 +396,6 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     });
 
-    // 2. CLICK PE BUTONUL DIN POPUP (Navigate Here) - FIXAT CU REACTIVE UTILS
     reactiveUtils.on(
       () => this.view.popup,
       "trigger-action",
@@ -376,6 +405,9 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
           this.handleNavigateToEvent();
         } else if (event.action.id === "delete-event") {
           this.handleDeleteEvent();
+        } else if (event.action.id === "view-stats") {
+          // AICI SE DESCHIDE MODALUL
+          this.openStatsModal();
         } else if (event.action.id === "event-going") {
           this.handleEventStatus("Going");
         } else if (event.action.id === "event-not_going") {
@@ -386,7 +418,87 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       }
     );
   }
+  openStatsModal() {
+    const selectedFeature = this.view.popup.selectedFeature;
+    if (!selectedFeature) return;
 
+    const attrs = selectedFeature.attributes;
+    const geom = selectedFeature.geometry;
+
+    // --- Time & Space Logic (Keep existing) ---
+    const start = new Date(attrs.start_time);
+    const end = new Date(attrs.end_time);
+    const durationHrs = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+
+    let areaDisplay = "N/A (Point Event)";
+    let areaSqMeters = 0;
+    if (geom.type === 'polygon') {
+      areaSqMeters = Math.abs(geometryEngine.geodesicArea(geom as any, "square-meters"));
+      if (areaSqMeters > 10000) {
+        areaDisplay = `${(areaSqMeters / 1000000).toFixed(2)} km²`;
+      } else {
+        areaDisplay = `${areaSqMeters.toFixed(0)} m²`;
+      }
+    }
+
+    const insightsMessages: string[] = [];
+    if (areaSqMeters > 10000) insightsMessages.push("This event covers a huge area (> 10000m²). Wear comfortable shoes!");
+    if (durationHrs > 24) insightsMessages.push("Long-term event (multiday). Consider nearby accommodation.");
+    else if (durationHrs <= 5) insightsMessages.push("Short duration event. Perfect for a quick visit.");
+
+    // --- NEW: AGE DISTRIBUTION LOGIC ---
+
+    const rawDistribution = attrs.age_distribution || { "18-24": 0, "25-34": 0, "35-44": 0, "45+": 0 };
+
+    let totalParticipants = 0;
+    Object.values(rawDistribution).forEach((val: any) => totalParticipants += val);
+
+    const categories = ["18-24", "25-34", "35-44", "45+"];
+    const processedGroups = categories.map(cat => {
+      const count = rawDistribution[cat] || 0;
+      const percent = totalParticipants > 0 ? (count / totalParticipants) * 100 : 0;
+      return {
+        label: cat,
+        count: count,
+        percent: Math.round(percent)
+      };
+    });
+
+    // --- Chart Data (Keep existing) ---
+    this.participationChartData = {
+      labels: ['Going', 'Interested', 'Not Going'],
+      datasets: [{
+        data: [attrs.going || 0, attrs.interested || 0, attrs.not_going || 0],
+        backgroundColor: ['#2ecc71', '#f1c40f', '#e74c3c'],
+        hoverBackgroundColor: ['#27ae60', '#f39c12', '#c0392b']
+      }]
+    };
+
+    this.genderChartData = {
+      labels: ['Male', 'Female', 'Not Specified'],
+      datasets: [{
+        data: [attrs.malePerc || 0, attrs.femalePerc || 0, attrs.notPerc || 0],
+        backgroundColor: ['#3498db', '#9b59b6', '#95a5a6']
+      }]
+    };
+
+    // --- UPDATE STATE ---
+    this.selectedEventStats = {
+      title: attrs.title,
+      durationHours: parseFloat(durationHrs.toFixed(1)),
+      areaSize: areaDisplay,
+      ageAvg: attrs.ageAvg || 0,
+      insights: insightsMessages,
+      ageGroups: processedGroups
+    };
+
+    this.showStatsModal = true;
+    this.view.popup.close();
+  }
+
+  closeStatsModal() {
+    this.showStatsModal = false;
+  }
   // 1. Activare mod rutare din FAB
   startRoutingMode() {
     this.appMode = 'ROUTING';
@@ -771,6 +883,12 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
               className: "esri-icon-directions",
               type: "button" as "button"
             });
+            actions.push({
+              title: "View Stats",
+              id: "view-stats",
+              className: "esri-icon-chart", // Iconita de grafic
+              type: "button"
+            });
             if (event.owner_id && event.owner_id === currentUserId) {
               actions.push({
                 title: "Delete Event",
@@ -783,11 +901,15 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
             const popupTemplate = {
               title: event.title,
               content: `
-              <b>Description:</b> ${event.description}<br>
-              <b>Start:</b> ${startDate}<br>
-              <b>End:</b> ${endDate}<br>
+              <div style="font-family: sans-serif; color: #555;">
+                  <b>Description:</b> ${event.description}<br>
+                  <div style="margin-top: 8px; font-size: 0.9em; color: #777;">
+                    <i class="far fa-clock"></i> ${startDate} <br> 
+                    <i class="fas fa-arrow-right"></i> ${endDate}
+                  </div>
+              </div>
               `,
-              actions: actions
+              actions: actions // Lista de butoane
             };
 
             const color = event.color ? this.hexToRgbArray(event.color) : [226, 119, 40];
@@ -829,6 +951,12 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
               title: "Navigate to",
               id: "navigate-to-event",
               className: "esri-icon-directions",
+              type: "button" as "button"
+            });
+            actions.push({
+              title: "View Stats",
+              id: "view-stats",
+              className: "esri-icon-chart",
               type: "button" as "button"
             });
             if (event.owner_id && event.owner_id === currentUserId) {

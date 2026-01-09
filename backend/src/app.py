@@ -3,9 +3,8 @@ from flask import request, session, jsonify, Response, send_from_directory
 from flask import url_for, redirect
 
 from flask_cors import CORS
-from datetime import datetime, timedelta
-
-from models import db
+from datetime import datetime, timedelta,date
+from models import db, User, Participation, Event
 import jwt
 import os
 from werkzeug.utils import secure_filename
@@ -121,7 +120,15 @@ def post_event():
 
 @app.route("/get_events", methods=["GET"])
 def get_events():
-    return jsonify(get_all_events()), 200
+    events = get_all_events() 
+    
+    # 2. Iterate and inject the distribution data
+    for event in events:
+        # Assuming the dictionary has an 'id' field
+        if 'id' in event:
+            event['age_distribution'] = calculate_age_distribution(event['id'])
+            
+    return jsonify(events), 200
 
 @app.route("/post_participation", methods=["POST"])
 def post_participation():
@@ -133,7 +140,12 @@ def post_participation():
         return jsonify(message), 400
 
     create_participation(data)
-    return jsonify(get_event(data["event_id"])), 200
+    updated_event = get_event(data["event_id"])
+    
+    if updated_event:
+        updated_event['age_distribution'] = calculate_age_distribution(data["event_id"])
+        
+    return jsonify(updated_event), 200
 
 
 @app.route("/get_participations", methods=["GET"])
@@ -163,14 +175,49 @@ def get_user_endpoint():
         return jsonify({"error": "Missing user_id parameter"}), 400
     
     return jsonify(get_user(user_id)), 200
+def calculate_age_distribution(event_id):
+    """
+    Calculates age distribution for 'Going' participants of a specific event.
+    """
+    distribution = {
+        "18-24": 0,
+        "25-34": 0,
+        "35-44": 0,
+        "45+": 0
+    }
+    
 
+    participants = db.session.query(User.birthday).join(Participation, Participation.user_id == User.id)\
+        .filter(Participation.event_id == event_id)\
+        .filter(Participation.status == "Going").all()
+
+    today = date.today()
+
+    for result in participants:
+        birthday = result.birthday
+        if birthday:
+            age = today.year - birthday.year - ((today.month, today.day) < (birthday.month, birthday.day))
+            
+            if 18 <= age <= 24:
+                distribution["18-24"] += 1
+            elif 25 <= age <= 34:
+                distribution["25-34"] += 1
+            elif 35 <= age <= 44:
+                distribution["35-44"] += 1
+            elif age >= 45:
+                distribution["45+"] += 1
+                
+    return distribution
 @app.route("/get_event", methods=["GET"])
 def get_event_endpoint():
     event_id = request.args.get("event_id", type = int)
     if event_id is None:
         return jsonify({"error": "Missing event_id parameter"}), 400
+    event_data = get_event(event_id)
     
-    return jsonify(get_event(event_id)), 200
+    if event_data:
+        event_data['age_distribution'] = calculate_age_distribution(event_id)
+    return jsonify(event_data), 200
 @app.route("/delete_event/<int:event_id>", methods=["DELETE"])
 @login_required
 def delete_event_endpoint(event_id):
