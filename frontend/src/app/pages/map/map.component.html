@@ -133,104 +133,7 @@
             </li>
         </ul>
     </div>
-    <div class="stats-modal-overlay" *ngIf="showStatsModal">
-        <div class="stats-modal">
 
-            <div class="stats-header">
-                <h2>Analytics: {{ selectedEventStats.title }}</h2>
-                <button class="close-stats-btn" (click)="closeStatsModal()">&times;</button>
-            </div>
-
-            <div class="stats-tabs">
-                <button [class.active]="activeTab === 'demographics'" (click)="activeTab = 'demographics'">
-                    <i class="fas fa-users"></i> Demographics
-                </button>
-                <button [class.active]="activeTab === 'time-space'" (click)="activeTab = 'time-space'">
-                    <i class="fas fa-clock"></i> Time & Space
-                </button>
-            </div>
-
-            <div class="stats-content">
-
-                <div *ngIf="activeTab === 'demographics'" class="tab-pane fade-in">
-                    <div class="charts-grid">
-                        <div class="chart-card">
-                            <h4>Engagement Status</h4>
-                            <canvas baseChart [data]="participationChartData" [type]="'pie'" [options]="pieOptions">
-                            </canvas>
-                        </div>
-
-                        <div class="chart-card">
-                            <h4>Gender Distribution</h4>
-                            <canvas baseChart [data]="genderChartData" [type]="'doughnut'" [options]="pieOptions">
-                            </canvas>
-                        </div>
-                    </div>
-
-                    <div class="stat-row">
-                        <h4>Age Distribution</h4>
-
-                        <div class="age-bars-container">
-                            <div *ngFor="let group of selectedEventStats.ageGroups" class="age-bar-row">
-
-                                <div class="age-label">{{ group.label }}</div>
-
-                                <div class="age-track">
-                                    <div class="age-fill" [style.width.%]="group.percent"></div>
-                                </div>
-
-                                <div class="age-value">
-                                    <strong>{{ group.count }}</strong> <small class="text-muted">({{ group.percent
-                                        }}%)</small>
-                                </div>
-
-                            </div>
-                        </div>
-
-                        <div class="avg-age-footer">
-                            Avg Age: <strong>{{ selectedEventStats.ageAvg }}</strong> years
-                        </div>
-                    </div>
-                </div>
-
-                <div *ngIf="activeTab === 'time-space'" class="tab-pane fade-in">
-
-                    <div class="info-cards-grid">
-                        <div class="info-card blue">
-                            <div class="icon"><i class="fas fa-hourglass-half"></i></div>
-                            <div class="data">
-                                <span class="value">{{ selectedEventStats.durationHours }} hrs</span>
-                                <span class="label">Duration</span>
-                            </div>
-                        </div>
-
-                        <div class="info-card green">
-                            <div class="icon"><i class="fas fa-draw-polygon"></i></div>
-                            <div class="data">
-                                <span class="value">{{ selectedEventStats.areaSize }}</span>
-                                <span class="label">Geographic Area</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="context-box">
-                        <h4><i class="fas fa-lightbulb"></i> Insights</h4>
-
-                        <ng-container *ngIf="selectedEventStats.insights && selectedEventStats.insights.length > 0">
-                            <p *ngFor="let msg of selectedEventStats.insights">
-                                • {{ msg }}
-                            </p>
-                        </ng-container>
-
-                        <p *ngIf="!selectedEventStats.insights || selectedEventStats.insights.length === 0">
-                            No specific insights regarding area or time for this event.
-                        </p>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-    </div>
 </mat-drawer-container>
 
 <button class="fab" (click)="drawer.toggle()">☰</button>
@@ -242,12 +145,111 @@
     </button>
 
     <button class="fab-option route" *ngIf="fabOpen" (click)="startRoutingMode()" matTooltip="Routing"
-        matTooltipPosition="left">
+        matTooltipPosition="left" [disabled]="showStatsModal">
         🧭
     </button>
 
     <button class="fab-option event" *ngIf="fabOpen" (click)="openAddEvent()" matTooltip="Add event"
-        matTooltipPosition="left">
+        matTooltipPosition="left" [disabled]="showStatsModal">
         📍
     </button>
+
+</div>
+<div class="stats-modal-overlay" *ngIf="showStatsModal">
+    <div class="stats-modal">
+
+        <div class="stats-header">
+            <h2>Analytics: {{ selectedEventStats.title }}</h2>
+            <button class="close-stats-btn" (click)="closeStatsModal()">&times;</button>
+        </div>
+
+        <div class="stats-tabs">
+            <button [class.active]="activeTab === 'demographics'" (click)="activeTab = 'demographics'">
+                <i class="fas fa-users"></i> Demographics
+            </button>
+            <button [class.active]="activeTab === 'time-space'" (click)="activeTab = 'time-space'">
+                <i class="fas fa-clock"></i> Time & Space
+            </button>
+        </div>
+
+        <div class="stats-content">
+
+            <div *ngIf="activeTab === 'demographics'" class="tab-pane fade-in">
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <h4>Engagement Status</h4>
+                        <canvas baseChart [data]="participationChartData" [type]="'pie'" [options]="pieOptions">
+                        </canvas>
+                    </div>
+
+                    <div class="chart-card">
+                        <h4>Gender Distribution</h4>
+                        <canvas baseChart [data]="genderChartData" [type]="'doughnut'" [options]="pieOptions">
+                        </canvas>
+                    </div>
+                </div>
+
+                <div class="stat-row">
+                    <h4>Age Distribution</h4>
+
+                    <div class="age-bars-container">
+                        <div *ngFor="let group of selectedEventStats.ageGroups" class="age-bar-row">
+
+                            <div class="age-label">{{ group.label }}</div>
+
+                            <div class="age-track">
+                                <div class="age-fill" [style.width.%]="group.percent"></div>
+                            </div>
+
+                            <div class="age-value">
+                                <strong>{{ group.count }}</strong> <small class="text-muted">({{ group.percent
+                                    }}%)</small>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="avg-age-footer">
+                        Avg Age: <strong>{{ selectedEventStats.ageAvg }}</strong> years
+                    </div>
+                </div>
+            </div>
+
+            <div *ngIf="activeTab === 'time-space'" class="tab-pane fade-in">
+
+                <div class="info-cards-grid">
+                    <div class="info-card blue">
+                        <div class="icon"><i class="fas fa-hourglass-half"></i></div>
+                        <div class="data">
+                            <span class="value">{{ selectedEventStats.durationHours }} hrs</span>
+                            <span class="label">Duration</span>
+                        </div>
+                    </div>
+
+                    <div class="info-card green">
+                        <div class="icon"><i class="fas fa-draw-polygon"></i></div>
+                        <div class="data">
+                            <span class="value">{{ selectedEventStats.areaSize }}</span>
+                            <span class="label">Geographic Area</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="context-box">
+                    <h4><i class="fas fa-lightbulb"></i> Insights</h4>
+
+                    <ng-container *ngIf="selectedEventStats.insights && selectedEventStats.insights.length > 0">
+                        <p *ngFor="let msg of selectedEventStats.insights">
+                            • {{ msg }}
+                        </p>
+                    </ng-container>
+
+                    <p *ngIf="!selectedEventStats.insights || selectedEventStats.insights.length === 0">
+                        No specific insights regarding area or time for this event.
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div>
 </div>

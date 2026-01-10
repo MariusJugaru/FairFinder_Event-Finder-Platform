@@ -811,3 +811,15 @@
   color: #7f8c8d;
   font-size: 0.9rem;
 }
+
+button.fab:disabled,
+button.fab-right:disabled,
+button.fab-option:disabled {
+  background-color: #bdc3c7 !important;
+  color: #ecf0f1;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+  opacity: 0.6;
+  pointer-events: none;
+}

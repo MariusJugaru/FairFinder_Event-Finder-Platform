@@ -19,7 +19,7 @@ import * as locator from "@arcgis/core/rest/locator";
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-
+import HeatmapRenderer from "@arcgis/core/renderers/HeatmapRenderer";
 import SimpleMarkerSymbol from "@arcgis/core/symbols/SimpleMarkerSymbol";
 import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
 import SimpleLineSymbol from "@arcgis/core/symbols/SimpleLineSymbol";
@@ -119,6 +119,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   allEventsList: any[] = [];
   filteredEvents: any[] = [];
   zoom = 10;
+  heatmapLayer: FeatureLayer | null = null;
   center: Array<number> = [-118.73682450024377, 34.07817583063242];
   basemap = "arcgis-navigation";
   // === VARIABILE NOI PENTRU MODAL SI STATISTICI ===
@@ -239,6 +240,12 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       // Centrare initiala
       this.setUserLocation();
       this.view.ui.remove("attribution");
+      reactiveUtils.watch(
+        () => this.view.zoom,
+        (zoom) => {
+          this.updateLayerVisibilityByZoom(zoom);
+        }
+      );
     } catch (error) {
       console.error("Critical Error loading the map: ", error);
       this.toast.showToast("Map initialized with warnings (check console)", "warning");
@@ -372,7 +379,14 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
         this.view.popup.open({
           features: [selectedFeature]
         });
+        const eventIndex = this.allEventsList.findIndex(e => e.id === eventId || e._id === eventId);
+        if (eventIndex !== -1) {
+          this.allEventsList[eventIndex].going = res.going;
+          this.allEventsList[eventIndex].interested = res.interested;
+        }
 
+        // 2. Regenerăm heatmap-ul cu noile date
+        this.createHeatmapLayer(this.allEventsList);
       },
       error: (err) => {
         console.error("Error updating participation!", err);
@@ -494,6 +508,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.showStatsModal = true;
     this.view.popup.close();
+    this.fabOpen = false;
   }
 
   closeStatsModal() {
@@ -858,7 +873,13 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
         // Curata layer-ul inainte de reload
         this.allEventsList = events;
         this.graphicsLayerEvents.removeAll();
+        if (this.heatmapLayer) {
+          this.map.remove(this.heatmapLayer);
+          this.heatmapLayer = null;
+        }
 
+        // 3. Generăm Heatmap-ul (funcția nouă)
+        this.createHeatmapLayer(events);
         events.forEach(event => {
           let graphic: Graphic;
           const geom = event.geometry;
@@ -1045,9 +1066,95 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
             if (graphic) this.graphicsLayerEvents.add(graphic);
           });
         });
+        this.updateLayerVisibilityByZoom();
       },
       error: (err) => console.error("Error loading events:", err)
     });
+  }
+
+  createHeatmapLayer(events: any[]) {
+    if (this.heatmapLayer) {
+      this.map.remove(this.heatmapLayer);
+      this.heatmapLayer = null;
+    }
+
+    let validPointsCount = 0;
+
+    const graphicsSource: Graphic[] = events
+      .filter(e => e.geometry && e.geometry.coordinates)
+      .map((event, index) => {
+        let lat = 0, lon = 0;
+        if (event.geometry.type === 'Point') {
+          lon = event.geometry.coordinates[0];
+          lat = event.geometry.coordinates[1];
+        } else if (event.geometry.type === 'Polygon') {
+          lon = event.geometry.coordinates[0][0][0];
+          lat = event.geometry.coordinates[0][0][1];
+        } else {
+          lon = event.geometry.coordinates[0][0];
+          lat = event.geometry.coordinates[0][1];
+        }
+
+        const going = Number(event.going) || 0;
+        const interested = Number(event.interested) || 0;
+        let popularityScore = (going * 3) + interested;
+
+        // Fix vizibilitate pentru scor 0
+        if (popularityScore === 0) popularityScore = 1;
+
+        validPointsCount++;
+
+        return new Graphic({
+          geometry: new Point({ longitude: lon, latitude: lat }),
+          attributes: { ObjectID: index, score: popularityScore }
+        });
+      });
+
+
+    const renderer = new HeatmapRenderer({
+      field: "score",
+      colorStops: [
+        { ratio: 0, color: "rgba(255, 255, 255, 0)" },
+        { ratio: 0.01, color: "rgba(0, 255, 255, 0.6)" }, // Se vede imediat ce exista o urma de activitate
+        { ratio: 0.02, color: "rgba(255, 255, 0, 0.9)" },
+        { ratio: 0.05, color: "rgba(255, 0, 0, 1)" }
+      ],
+      radius: 40,
+
+      maxDensity: 0.4
+    });
+
+    this.heatmapLayer = new FeatureLayer({
+      source: graphicsSource,
+      title: "Event Heatmap",
+      objectIdField: "ObjectID",
+      geometryType: "point",
+      spatialReference: { wkid: 4326 },
+      fields: [
+        { name: "ObjectID", type: "oid" },
+        { name: "score", type: "integer" }
+      ],
+      renderer: renderer as any,
+      visible: false
+    });
+
+    this.map.add(this.heatmapLayer);
+    this.updateLayerVisibilityByZoom();
+  }
+
+  updateLayerVisibilityByZoom(zoomLevel?: number) {
+    const currentZoom = zoomLevel || (this.view ? this.view.zoom : 10);
+    const ZOOM_THRESHOLD = 12;
+
+    // Adauga acest log pentru debug:
+
+    if (currentZoom < ZOOM_THRESHOLD) {
+      if (this.heatmapLayer) this.heatmapLayer.visible = true;
+      if (this.graphicsLayerEvents) this.graphicsLayerEvents.visible = false;
+    } else {
+      if (this.heatmapLayer) this.heatmapLayer.visible = false;
+      if (this.graphicsLayerEvents) this.graphicsLayerEvents.visible = true;
+    }
   }
   onSearchChange(query: string) {
     this.searchQuery = query; // Actualizam variabila
@@ -1087,10 +1194,9 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
         location: graphic.geometry
       });
     } else {
-      this.toast.showToast("Evenimentul nu a fost găsit pe hartă.", "warning");
+      this.toast.showToast("Event was not found on map.", "warning");
     }
   }
-  // --- GENERAL UI & AUTH ---
   handleNavigateToEvent() {
     const selectedFeature = this.view.popup.selectedFeature;
     if (!selectedFeature) return;

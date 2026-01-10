@@ -26,7 +26,18 @@ export class AuthService {
   }
 
   isLoggedIn(): boolean {
-    return !!localStorage.getItem("access_token");
+    const token = this.getToken();
+
+    if (!token) {
+      return false;
+    }
+
+    if (this.isTokenExpired(token)) {
+      this.logout();
+      return false;
+    }
+
+    return true;
   }
   getUserId(): number | null {
     const token = localStorage.getItem('access_token');
@@ -36,5 +47,21 @@ export class AuthService {
   }
   getToken() {
     return localStorage.getItem("access_token");
+  }
+  private isTokenExpired(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+
+      if (!payload.exp) {
+        return false;
+      }
+
+      const currentTime = Math.floor(Date.now() / 1000);
+
+      return currentTime >= payload.exp;
+
+    } catch (e) {
+      return true;
+    }
   }
 }
