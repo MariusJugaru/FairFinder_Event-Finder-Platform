@@ -215,7 +215,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   // --- INITIALIZARE HARTA ---
   async initializeMap() {
     try {
-      Config.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurKqlhvUKBfNssoTzTUwwyzWBytmWSpxC7jBfTuYIewz1OefDzWcPQlhGwhpCKa58tfYcQgzCqmFnKeItW9gpQTLb3Humpe1L62cfQcQmTiHZynTcISGk_-Tn9JG79k5qhY3IIuhDuh1-62S6ucWv7wroiByU-rZBpxxGK0Tb93LTvBngZ1bOq0Qo4mNQz2UQeqoEIvIYN6RTSitQQCfq_RE.AT1_7gEwBK61";
+      Config.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurItpixoyE0r_BZscEidgfhE1U0kVmJVDhv17vyxuIBzo4VyGoYu2uQY7S_0afU7Ess43IivLXbd_yEiy9S8jZHK3b0quZe5ldIZ9XmlZ2G1HmGGfCvP2XdyRHwy1ZbR5cR6931WMrFxqjAPi9vaq8thvwT-z1hVsGRVFXx23bp0QMTYFGwgsaPFzGUWfeIZnKxTP1JT6_1KAjoAcSlsVe0w.AT1_6ozqUgxH";
 
       this.map = new WebMap({ basemap: this.basemap });
 
