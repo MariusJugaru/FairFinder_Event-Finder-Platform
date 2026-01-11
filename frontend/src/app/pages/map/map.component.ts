@@ -175,7 +175,11 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       this.loaded = this.view.ready;
       this.mapLoadedEvent.emit(true);
       this.setUserLocation(); // Centrare initiala
-      this.loggedIn = this.authService.isLoggedIn();
+      this.authService.authState$.subscribe((status) => {
+        this.loggedIn = status;
+
+
+      });
     });
 
     this.loadEventsOnMap();
@@ -215,7 +219,6 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
 
       this.map = new WebMap({ basemap: this.basemap });
 
-      this.addFeatureLayers();
       this.addGraphicsLayer();
 
       this.view = new MapView({
@@ -838,23 +841,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // --- LAYERS & UTILS ---
 
-  addFeatureLayers() {
-    this.trailheadsLayer = new FeatureLayer({
-      url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trailheads/FeatureServer/0",
-      outFields: ["*"],
-    });
-    this.map.add(this.trailheadsLayer);
 
-    const trailsLayer = new FeatureLayer({
-      url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Trails/FeatureServer/0",
-    });
-    this.map.add(trailsLayer, 0);
-
-    const parksLayer = new FeatureLayer({
-      url: "https://services3.arcgis.com/GVgbJbqm8hXASVYi/arcgis/rest/services/Parks_and_Open_Space/FeatureServer/0",
-    });
-    this.map.add(parksLayer, 0);
-  }
 
   addGraphicsLayer() {
     this.graphicsLayer = new GraphicsLayer();

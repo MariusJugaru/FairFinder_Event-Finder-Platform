@@ -2,63 +2,58 @@
     <mat-card class="profile-card mat-elevation-z6">
         <h1 class="profile-title">Your Profile</h1>
 
-        <!-- Profile picture -->
         <div class="profile-picture-container">
             <img [src]="user?.profilePicture || 'assets/default-avatar.png'" alt="Profile Picture"
                 class="profile-picture">
-            <input type="file" (change)="onProfilePicChange($event)" hidden #fileInput>
-            <button mat-mini-fab color="primary" class="edit-pic-btn" (click)="fileInput.click()">
-                <mat-icon>edit</mat-icon>
-            </button>
+
+            <input type="file" (change)="onProfilePicChange($event)" #fileInput>
+
+            <button mat-mini-fab class="edit-pic-btn" (click)="fileInput.click()" matTooltip="Change picture">
+                <mat-icon>edit</mat-icon> </button>
         </div>
 
-        <!-- User info form -->
         <form [formGroup]="profileForm" (ngSubmit)="onSave()">
-            <!-- First Name -->
-            <mat-form-field appearance="fill" class="full-width">
+            <mat-form-field appearance="outline" class="full-width">
                 <mat-label>First Name</mat-label>
                 <input matInput formControlName="firstName">
             </mat-form-field>
 
-            <!-- Last Name -->
-            <mat-form-field appearance="fill" class="full-width">
+            <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Last Name</mat-label>
                 <input matInput formControlName="lastName">
             </mat-form-field>
 
-            <!-- Email (readonly) -->
-            <mat-form-field appearance="fill" class="full-width">
+            <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Email</mat-label>
                 <input matInput formControlName="email" readonly>
             </mat-form-field>
 
-            <mat-form-field appearance="fill" class="full-width">
+            <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Birthday</mat-label>
                 <input matInput [value]="user?.birthday | date:'mediumDate'" readonly>
             </mat-form-field>
-            
-            <mat-form-field appearance="fill" class="full-width">
-                <mat-label>Gender</mat-label>
-                <input matInput readonly>
+
+            <div class="full-width" style="text-align: left; margin-bottom: 15px;">
+                <label style="color: gray; font-size: 0.8rem; margin-left: 4px;">Gender</label>
                 <mat-radio-group formControlName="gender">
                     <mat-radio-button value="M">Male</mat-radio-button>
                     <mat-radio-button value="F">Female</mat-radio-button>
-                    <mat-radio-button value="N">Not-Specified</mat-radio-button>
+                    <mat-radio-button value="N">Other</mat-radio-button>
                 </mat-radio-group>
-            </mat-form-field>
+            </div>
 
-            <button mat-raised-button color="primary" class="save-btn" [disabled]="profileForm.invalid">
+            <button mat-raised-button class="save-btn" [disabled]="profileForm.invalid">
                 Save Changes
             </button>
         </form>
 
         <div class="profile-stats">
             <h3>Statistics</h3>
-            <p>Events created: 0</p>
+            <p><strong>Events created:</strong> {{ user?.events_count || 0 }}</p>
         </div>
 
-        <button mat-raised-button color="accent" [routerLink]="['/map']" [queryParams]="{ someParam: 'value' }">
-            Go to Map
+        <button mat-raised-button class="map-btn" (click)="goToMap()">
+            <mat-icon style="margin-right: 5px;">map</mat-icon> Back to Map
         </button>
     </mat-card>
 </div>

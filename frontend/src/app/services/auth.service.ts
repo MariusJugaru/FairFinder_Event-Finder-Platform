@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
+import { ToastService } from './toast.service';
 
 @Injectable({
   providedIn: 'root'
@@ -9,8 +10,9 @@ export class AuthService {
 
   private API_URL = 'http://127.0.0.1:8081'; // backend-ul tău
 
-  constructor(private http: HttpClient) { }
-
+  constructor(private http: HttpClient, private toast: ToastService) { }
+  private authState = new BehaviorSubject<boolean>(this.checkInitialTokenState());
+  authState$ = this.authState.asObservable();
   login(credentials: { email: string, password: string }): Observable<any> {
     return this.http.post(`${this.API_URL}/login`, credentials);
   }
@@ -18,11 +20,13 @@ export class AuthService {
   saveTokens(access: string, refresh: string) {
     localStorage.setItem("access_token", access);
     localStorage.setItem("refresh_token", refresh);
+    this.authState.next(true);
   }
 
   logout() {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    this.authState.next(false);
   }
 
   isLoggedIn(): boolean {
@@ -34,6 +38,7 @@ export class AuthService {
 
     if (this.isTokenExpired(token)) {
       this.logout();
+      this.toast.showToast("Session expired. Please log in again to access all functionalities.", "warning");
       return false;
     }
 
@@ -63,5 +68,23 @@ export class AuthService {
     } catch (e) {
       return true;
     }
+  }
+  private checkInitialTokenState(): boolean {
+    const token = localStorage.getItem("access_token");
+    if (!token) return false;
+    // Verificăm doar dacă e valid, fără să dăm logout/toast aici (evităm bucle)
+    return !this.isTokenExpiredSimple(token);
+  }
+
+
+
+  // O copie simplă pentru verificare inițială ca să nu intrăm în bucle cu logout()
+  private isTokenExpiredSimple(token: string): boolean {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (!payload.exp) return false;
+      const currentTime = Math.floor(Date.now() / 1000);
+      return currentTime >= payload.exp;
+    } catch (e) { return true; }
   }
 }

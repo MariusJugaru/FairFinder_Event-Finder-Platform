@@ -16,7 +16,7 @@ app = Flask(__name__)
 app.secret_key = "SECRET_KEY"
 
 # DB Config
-ACCESS_TOKEN_EXPIRES_MIN = 60 * 24
+ACCESS_TOKEN_EXPIRES_MIN = 60*2
 REFRESH_TOKEN_EXPIRES_DAYS = 7
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://admin:admin@localhost:3306/fair-finder-db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -105,16 +105,17 @@ def get_users():
     return jsonify(get_all_users()), 200
 
 @app.route("/post_event", methods=["POST"])
+@login_required
 def post_event():
     if request.method == "POST":
         data = request.get_json()
+        
+        data['owner_id'] = request.user_id 
 
         status, message = validate_post_request(data, PostFields.event.value)
         if not status:
             return jsonify(message), 400
         
-        print(data)
-
         create_event(data)
         return jsonify({"status": "Event added"}), 200
 
@@ -122,24 +123,24 @@ def post_event():
 def get_events():
     events = get_all_events() 
     
-    # 2. Iterate and inject the distribution data
     for event in events:
-        # Assuming the dictionary has an 'id' field
         if 'id' in event:
             event['age_distribution'] = calculate_age_distribution(event['id'])
             
     return jsonify(events), 200
 
 @app.route("/post_participation", methods=["POST"])
+@login_required 
 def post_participation():
-
     data = request.get_json()
+    data['user_id'] = request.user_id
 
     status, message = validate_post_request(data, PostFields.participation.value)
     if not status:
         return jsonify(message), 400
 
     create_participation(data)
+    
     updated_event = get_event(data["event_id"])
     
     if updated_event:
@@ -167,14 +168,22 @@ def delete():
 @app.route("/get_user", methods=["GET"])
 @login_required
 def get_user_endpoint():
-    user_id = request.args.get("user_id", type = int)
-    if user_id!=request.user_id:
-        print("De ce")
-        return jsonify({"error":"Not authorized"}),403
+    user_id = request.args.get("user_id", type=int)
+    
+    if user_id != request.user_id:
+        return jsonify({"error": "Not authorized"}), 403
+    
     if user_id is None:
         return jsonify({"error": "Missing user_id parameter"}), 400
     
-    return jsonify(get_user(user_id)), 200
+    user_data = get_user(user_id) 
+   
+    events_count = Event.query.filter_by(owner_id=user_id).count()
+
+    if user_data:
+        user_data['events_count'] = events_count
+    
+    return jsonify(user_data), 200
 def calculate_age_distribution(event_id):
     """
     Calculates age distribution for 'Going' participants of a specific event.
