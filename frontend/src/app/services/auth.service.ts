@@ -72,13 +72,11 @@ export class AuthService {
   private checkInitialTokenState(): boolean {
     const token = localStorage.getItem("access_token");
     if (!token) return false;
-    // Verificăm doar dacă e valid, fără să dăm logout/toast aici (evităm bucle)
     return !this.isTokenExpiredSimple(token);
   }
 
 
 
-  // O copie simplă pentru verificare inițială ca să nu intrăm în bucle cu logout()
   private isTokenExpiredSimple(token: string): boolean {
     try {
       const payload = JSON.parse(atob(token.split('.')[1]));

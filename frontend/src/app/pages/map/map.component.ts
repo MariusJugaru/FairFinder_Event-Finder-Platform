@@ -30,7 +30,6 @@ import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
 import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
 import Collection from "@arcgis/core/core/Collection";
 
-// --- SERVICIUL DE EVENIMENTE (Ramas neschimbat) ---
 @Injectable({
   providedIn: 'root'
 })
@@ -106,12 +105,12 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild("mapViewNode", { static: true }) private mapViewEl: ElementRef;
   @ViewChild('drawer') drawer!: MatDrawer;        // Meniul stanga
   @ViewChild('rightMenu') rightMenu!: MatDrawer;  // Meniul Add Event
-  @ViewChild('routeMenu') routeMenu!: MatDrawer;  // Meniul Rutare (NOU)
+  @ViewChild('routeMenu') routeMenu!: MatDrawer;  // Meniul Rutare 
 
   // Map & Layers
   map: esri.Map;
   view: esri.MapView;
-  graphicsLayer: esri.GraphicsLayer;            // General purpose
+  graphicsLayer: esri.GraphicsLayer;
   graphicsLayerUserPoints: esri.GraphicsLayer;  // Puncte user (event creation)
   graphicsLayerRoutes: esri.GraphicsLayer;      // Rute
   graphicsLayerEvents: GraphicsLayer;           // Evenimente incarcate din DB
@@ -122,10 +121,8 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   heatmapLayer: FeatureLayer | null = null;
   center: Array<number> = [-118.73682450024377, 34.07817583063242];
   basemap = "arcgis-navigation";
-  // === VARIABILE NOI PENTRU MODAL SI STATISTICI ===
   showStatsModal = false;
   activeTab: 'demographics' | 'time-space' = 'demographics';
-  // Date calculate
   selectedEventStats = {
     title: '',
     durationHours: 0,
@@ -143,7 +140,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
   // Datele pentru grafice
   participationChartData: ChartData<'pie'> = { labels: [], datasets: [] };
   genderChartData: ChartData<'doughnut'> = { labels: [], datasets: [] };
-  // --- Variabile pentru ADD EVENT ---
+  //Variabile pentru add event
   tempPoints: esri.Graphic[] = []
   geometryType: 'Point' | 'Polygon' | 'Polyline' = 'Point';
   mapFeatures: MapFeature[] = [];
@@ -155,7 +152,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
     color: '#1abc9c'
   };
 
-  // --- Variabile pentru RUTARE ---
+  // Variabile pentru rutare
   activeRoutingField: 'start' | 'end' | null = null; // Campul selectat curent
   startPointGraphic: esri.Graphic | null = null;
   endPointGraphic: esri.Graphic | null = null;
@@ -212,10 +209,10 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  // --- INITIALIZARE HARTA ---
+  // Initializare Harta
   async initializeMap() {
     try {
-      Config.apiKey = "AAPTxy8BH1VEsoebNVZXo8HurItpixoyE0r_BZscEidgfhE1U0kVmJVDhv17vyxuIBzo4VyGoYu2uQY7S_0afU7Ess43IivLXbd_yEiy9S8jZHK3b0quZe5ldIZ9XmlZ2G1HmGGfCvP2XdyRHwy1ZbR5cR6931WMrFxqjAPi9vaq8thvwT-z1hVsGRVFXx23bp0QMTYFGwgsaPFzGUWfeIZnKxTP1JT6_1KAjoAcSlsVe0w.AT1_6ozqUgxH";
+      Config.apiKey = "";
 
       this.map = new WebMap({ basemap: this.basemap });
 
@@ -235,7 +232,6 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       this.loaded = this.view.ready;
       this.mapLoadedEvent.emit(true);
 
-      // --- AICI LEGAM EVENIMENTELE (CLICK & POPUP) ---
       this.setupEventHandlers();
 
       console.log("ArcGIS map loaded successfully");
@@ -324,7 +320,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
         selectedFeature.attributes.not_going = res.not_going;
         selectedFeature.attributes.interested = res.interested;
 
-        // De asemenea actualizam procentele pentru demografie
+        // De asemenea actualizam procentele pentru demografice
         selectedFeature.attributes.ageAvg = res.ageAvg;
         selectedFeature.attributes.malePerc = res.malePerc;
         selectedFeature.attributes.femalePerc = res.femalePerc;
@@ -417,7 +413,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       () => this.view.popup,
       "trigger-action",
       (event: any) => {
-        // Verificăm ID-ul acțiunii
+        // Verificăm ID-ul actiunii
         if (event.action.id === "navigate-to-event") {
           this.handleNavigateToEvent();
         } else if (event.action.id === "delete-event") {
@@ -441,8 +437,6 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
 
     const attrs = selectedFeature.attributes;
     const geom = selectedFeature.geometry;
-
-    // --- Time & Space Logic (Keep existing) ---
     const start = new Date(attrs.start_time);
     const end = new Date(attrs.end_time);
     const durationHrs = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
@@ -456,14 +450,28 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       } else {
         areaDisplay = `${areaSqMeters.toFixed(0)} m²`;
       }
-    }
+    } else if (geom.type === 'polyline') {
+      const lengthMeters = geometryEngine.geodesicLength(geom as any, "meters");
 
+      const assumedWidth = 10;
+      areaSqMeters = lengthMeters * assumedWidth;
+
+      areaDisplay = `Length: ${(lengthMeters / 1000).toFixed(2)}km | Est. Area: `;
+    }
+    if (areaSqMeters > 0) {
+      if (areaSqMeters > 10000) {
+        const text = `${(areaSqMeters / 1000000).toFixed(2)} km²`;
+        areaDisplay = areaDisplay.includes("Length") ? areaDisplay + text : text;
+      } else {
+        const text = `${areaSqMeters.toFixed(0)} m²`;
+        areaDisplay = areaDisplay.includes("Length") ? areaDisplay + text : text;
+      }
+    }
     const insightsMessages: string[] = [];
     if (areaSqMeters > 10000) insightsMessages.push("This event covers a huge area (> 10000m²). Wear comfortable shoes!");
     if (durationHrs > 24) insightsMessages.push("Long-term event (multiday). Consider nearby accommodation.");
     else if (durationHrs <= 5) insightsMessages.push("Short duration event. Perfect for a quick visit.");
 
-    // --- NEW: AGE DISTRIBUTION LOGIC ---
 
     const rawDistribution = attrs.age_distribution || { "18-24": 0, "25-34": 0, "35-44": 0, "45+": 0 };
 
@@ -481,7 +489,6 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
       };
     });
 
-    // --- Chart Data (Keep existing) ---
     this.participationChartData = {
       labels: ['Going', 'Interested', 'Not Going'],
       datasets: [{
@@ -735,7 +742,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
     this.routeMenu.close();
   }
 
-  // --- METODE ADD EVENT ---
+  //METODE ADD EVENT
 
   handleAddEventClick(point: __esri.Point) {
     const graphic = this.addPoint(point.latitude, point.longitude);
@@ -865,7 +872,7 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
           this.heatmapLayer = null;
         }
 
-        // 3. Generăm Heatmap-ul (funcția nouă)
+        // 3. Generam Heatmap-ul
         this.createHeatmapLayer(events);
         events.forEach(event => {
           let graphic: Graphic;
@@ -1133,7 +1140,6 @@ export class MapComponent implements OnInit, OnDestroy, AfterViewInit {
     const currentZoom = zoomLevel || (this.view ? this.view.zoom : 10);
     const ZOOM_THRESHOLD = 12;
 
-    // Adauga acest log pentru debug:
 
     if (currentZoom < ZOOM_THRESHOLD) {
       if (this.heatmapLayer) this.heatmapLayer.visible = true;
